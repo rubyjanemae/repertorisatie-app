@@ -1,0 +1,207 @@
+{
+  "Abdomen": {
+    "file": "abdomen.json",
+    "rubricCount": 4339,
+    "sizeKB": 440.8
+  },
+  "Appetite": {
+    "file": "appetite.json",
+    "rubricCount": 513,
+    "sizeKB": 63.4
+  },
+  "Back": {
+    "file": "back.json",
+    "rubricCount": 4611,
+    "sizeKB": 458.7
+  },
+  "Bladder": {
+    "file": "bladder.json",
+    "rubricCount": 766,
+    "sizeKB": 94.4
+  },
+  "Blood": {
+    "file": "blood.json",
+    "rubricCount": 25,
+    "sizeKB": 2.0
+  },
+  "Chest": {
+    "file": "chest.json",
+    "rubricCount": 2858,
+    "sizeKB": 256.0
+  },
+  "Chill": {
+    "file": "chill.json",
+    "rubricCount": 768,
+    "sizeKB": 88.4
+  },
+  "Clinical": {
+    "file": "clinical.json",
+    "rubricCount": 490,
+    "sizeKB": 81.0
+  },
+  "Cough": {
+    "file": "cough.json",
+    "rubricCount": 1535,
+    "sizeKB": 157.5
+  },
+  "Ear": {
+    "file": "ear.json",
+    "rubricCount": 2029,
+    "sizeKB": 162.9
+  },
+  "Expectoration": {
+    "file": "expectoration.json",
+    "rubricCount": 344,
+    "sizeKB": 42.0
+  },
+  "External throat": {
+    "file": "external-throat.json",
+    "rubricCount": 276,
+    "sizeKB": 27.2
+  },
+  "Extremities": {
+    "file": "extremities.json",
+    "rubricCount": 16114,
+    "sizeKB": 1452.1
+  },
+  "Eye": {
+    "file": "eye.json",
+    "rubricCount": 1787,
+    "sizeKB": 186.5
+  },
+  "Face": {
+    "file": "face.json",
+    "rubricCount": 2094,
+    "sizeKB": 236.3
+  },
+  "Fever": {
+    "file": "fever.json",
+    "rubricCount": 596,
+    "sizeKB": 75.2
+  },
+  "Generalities": {
+    "file": "generalities.json",
+    "rubricCount": 1751,
+    "sizeKB": 367.8
+  },
+  "Genitalia female": {
+    "file": "genitalia-female.json",
+    "rubricCount": 1484,
+    "sizeKB": 173.0
+  },
+  "Genitalia male": {
+    "file": "genitalia-male.json",
+    "rubricCount": 1121,
+    "sizeKB": 127.6
+  },
+  "Head": {
+    "file": "head.json",
+    "rubricCount": 6984,
+    "sizeKB": 718.7
+  },
+  "Hearing": {
+    "file": "hearing.json",
+    "rubricCount": 168,
+    "sizeKB": 15.0
+  },
+  "Heart & Circulation": {
+    "file": "heart-and-circulation.json",
+    "rubricCount": 789,
+    "sizeKB": 110.8
+  },
+  "Kidneys": {
+    "file": "kidneys.json",
+    "rubricCount": 267,
+    "sizeKB": 23.7
+  },
+  "Larynx and trachea": {
+    "file": "larynx-and-trachea.json",
+    "rubricCount": 729,
+    "sizeKB": 96.2
+  },
+  "Mind": {
+    "file": "mind.json",
+    "rubricCount": 5827,
+    "sizeKB": 614.7
+  },
+  "Mouth": {
+    "file": "mouth.json",
+    "rubricCount": 1598,
+    "sizeKB": 177.1
+  },
+  "Nose": {
+    "file": "nose.json",
+    "rubricCount": 1497,
+    "sizeKB": 149.8
+  },
+  "Perspiration": {
+    "file": "perspiration.json",
+    "rubricCount": 395,
+    "sizeKB": 49.6
+  },
+  "Prostate gland": {
+    "file": "prostate-gland.json",
+    "rubricCount": 105,
+    "sizeKB": 9.6
+  },
+  "Rectum": {
+    "file": "rectum.json",
+    "rubricCount": 1549,
+    "sizeKB": 170.1
+  },
+  "Respiration": {
+    "file": "respiration.json",
+    "rubricCount": 760,
+    "sizeKB": 76.4
+  },
+  "Skin": {
+    "file": "skin.json",
+    "rubricCount": 1161,
+    "sizeKB": 163.2
+  },
+  "Sleep": {
+    "file": "sleep.json",
+    "rubricCount": 1588,
+    "sizeKB": 149.9
+  },
+  "Stomach": {
+    "file": "stomach.json",
+    "rubricCount": 2826,
+    "sizeKB": 285.3
+  },
+  "Stool": {
+    "file": "stool.json",
+    "rubricCount": 234,
+    "sizeKB": 44.1
+  },
+  "Teeth": {
+    "file": "teeth.json",
+    "rubricCount": 839,
+    "sizeKB": 84.2
+  },
+  "Throat": {
+    "file": "throat.json",
+    "rubricCount": 1047,
+    "sizeKB": 115.9
+  },
+  "Urethra": {
+    "file": "urethra.json",
+    "rubricCount": 606,
+    "sizeKB": 60.6
+  },
+  "Urine": {
+    "file": "urine.json",
+    "rubricCount": 406,
+    "sizeKB": 56.2
+  },
+  "Vertigo": {
+    "file": "vertigo.json",
+    "rubricCount": 512,
+    "sizeKB": 62.2
+  },
+  "Vision": {
+    "file": "vision.json",
+    "rubricCount": 1093,
+    "sizeKB": 90.5
+  }
+}
