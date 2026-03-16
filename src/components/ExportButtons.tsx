@@ -1,15 +1,19 @@
 'use client';
 
-import { Rubric, RemedyTally } from '@/lib/types';
+import { Rubric, RemedyTally, Case } from '@/lib/types';
 import { tallyRemedies, sortTally } from '@/lib/tallyRemedies';
-import { useMemo } from 'react';
+import { generateShareUrl } from '@/lib/shareCase';
+import { useMemo, useState } from 'react';
 
 interface ExportButtonsProps {
   caseName: string;
   rubrics: Rubric[];
+  activeCase?: Case | null;
 }
 
-export default function ExportButtons({ caseName, rubrics }: ExportButtonsProps) {
+export default function ExportButtons({ caseName, rubrics, activeCase }: ExportButtonsProps) {
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'json-copied'>('idle');
+
   const tally = useMemo(() => {
     const raw = tallyRemedies(rubrics);
     return sortTally(raw, { field: 'totalScore', direction: 'desc' });
@@ -150,6 +154,31 @@ export default function ExportButtons({ caseName, rubrics }: ExportButtonsProps)
     downloadFile(html, `repertorisatie-${caseName.replace(/\s+/g, '_')}.html`, 'text/html');
   };
 
+  const handleShare = async () => {
+    if (!activeCase) return;
+    const result = generateShareUrl(activeCase);
+    try {
+      if (!result.tooLarge) {
+        await navigator.clipboard.writeText(result.url);
+        setShareStatus('copied');
+      } else {
+        await navigator.clipboard.writeText(result.json);
+        setShareStatus('json-copied');
+      }
+      setTimeout(() => setShareStatus('idle'), 3000);
+    } catch {
+      // Fallback als clipboard API niet werkt
+      const textArea = document.createElement('textarea');
+      textArea.value = result.tooLarge ? result.json : result.url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setShareStatus(result.tooLarge ? 'json-copied' : 'copied');
+      setTimeout(() => setShareStatus('idle'), 3000);
+    }
+  };
+
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       <span className="text-xs text-gray-500 self-center mr-1">Exporteer:</span>
@@ -171,6 +200,27 @@ export default function ExportButtons({ caseName, rubrics }: ExportButtonsProps)
       >
         🌐 HTML (print)
       </button>
+      {activeCase && (
+        <>
+          <span className="text-gray-300 self-center">|</span>
+          <button
+            onClick={handleShare}
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors font-medium ${
+              shareStatus === 'copied'
+                ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                : shareStatus === 'json-copied'
+                ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                : 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+            }`}
+          >
+            {shareStatus === 'copied'
+              ? '✓ Link gekopieerd!'
+              : shareStatus === 'json-copied'
+              ? '✓ JSON gekopieerd (te groot voor link)'
+              : '🔗 Deel casus'}
+          </button>
+        </>
+      )}
     </div>
   );
 }

@@ -56,7 +56,7 @@ export default function TranslationTool() {
         }`}
       >
         <span>🔤</span>
-        <span className="font-medium">Opzoeken</span>
+        <span className="font-medium">Vertaler</span>
       </button>
 
       {/* Dropdown paneel */}

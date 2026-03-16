@@ -6,6 +6,7 @@ import { parseRemedies } from '@/lib/parseRemedies';
 import { createSampleCase, createSampleLibrary } from '@/lib/sampleData';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { lookupRemedies } from '@/lib/repertoryLookup';
+import { checkForSharedCase, clearShareParam } from '@/lib/shareCase';
 import CaseManager from '@/components/CaseManager';
 import RubricInput from '@/components/RubricInput';
 import RepertorisationTable from '@/components/RepertorisationTable';
@@ -30,6 +31,15 @@ export default function Home() {
   const [prefillRubricName, setPrefillRubricName] = useState<string | null>(null);
   const [prefillRemedyString, setPrefillRemedyString] = useState<string | null>(null);
   const [isLoadingRemedies, setIsLoadingRemedies] = useState(false);
+  const [importedCase, setImportedCase] = useState<Case | null>(null);
+
+  // Check of er een gedeelde casus in de URL zit
+  useEffect(() => {
+    const shared = checkForSharedCase();
+    if (shared) {
+      setImportedCase(shared);
+    }
+  }, []);
 
   // Laad sample data als het de eerste keer is
   if (!sampleLoaded && cases.length === 0) {
@@ -240,6 +250,44 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Import banner voor gedeelde casussen */}
+      {importedCase && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-indigo-800">
+                📥 Gedeelde casus ontvangen: <span className="text-indigo-600">&ldquo;{importedCase.name}&rdquo;</span>
+              </p>
+              <p className="text-xs text-indigo-600 mt-0.5">
+                {importedCase.rubrics.length} rubrieken · Klik op &ldquo;Importeer&rdquo; om deze toe te voegen
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setCases(prev => [...prev, importedCase]);
+                  setActiveCaseId(importedCase.id);
+                  setImportedCase(null);
+                  clearShareParam();
+                }}
+                className="text-sm bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+              >
+                Importeer
+              </button>
+              <button
+                onClick={() => {
+                  setImportedCase(null);
+                  clearShareParam();
+                }}
+                className="text-sm text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                Negeer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Case Manager */}
@@ -270,7 +318,7 @@ export default function Home() {
             />
 
             {/* Export knoppen */}
-            <ExportButtons caseName={activeCase.name} rubrics={activeCase.rubrics} />
+            <ExportButtons caseName={activeCase.name} rubrics={activeCase.rubrics} activeCase={activeCase} />
 
             {/* Repertorisatie tabel */}
             <RepertorisationTable
