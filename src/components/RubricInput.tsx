@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { SavedRubric } from '@/lib/types';
 import { parseRemedies, mergeRemedyStrings, gradeBgColor, gradeToDisplay, MergeResult } from '@/lib/parseRemedies';
 import { searchRubrics, lookupRemediesDirect, RubricSearchResult } from '@/lib/repertoryLookup';
+import SharedRubricLibrary from './SharedRubricLibrary';
+import { isSupabaseAvailable } from '@/lib/supabase';
 
 interface RubricInputProps {
   onAdd: (name: string, remedyString: string) => void;
@@ -12,6 +14,8 @@ interface RubricInputProps {
   prefillRemedyString?: string | null;
   isLoadingRemedies?: boolean;
   onPrefillConsumed?: () => void;
+  contributorName?: string;
+  onShareRubric?: (name: string, remedyString: string) => Promise<boolean>;
 }
 
 /** Split een remedy-string in 4 grade-buckets */
@@ -68,17 +72,20 @@ function countRemedies(g4: string, g3: string, g2: string, g1: string): number {
   return splitNames(g4).length + splitNames(g3).length + splitNames(g2).length + splitNames(g1).length;
 }
 
-export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, prefillRemedyString, isLoadingRemedies, onPrefillConsumed }: RubricInputProps) {
+export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, prefillRemedyString, isLoadingRemedies, onPrefillConsumed, contributorName, onShareRubric }: RubricInputProps) {
   const [name, setName] = useState('');
   const [grade4, setGrade4] = useState('');
   const [grade3, setGrade3] = useState('');
   const [grade2, setGrade2] = useState('');
   const [grade1, setGrade1] = useState('');
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showCommunity, setShowCommunity] = useState(false);
   const [librarySearch, setLibrarySearch] = useState('');
   const [showMerge, setShowMerge] = useState(false);
   const [mergeText, setMergeText] = useState('');
   const [mergeResult, setMergeResult] = useState<MergeResult | null>(null);
+  const [lastAddedRubric, setLastAddedRubric] = useState<{ name: string; remedyString: string } | null>(null);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'sharing' | 'shared' | 'error'>('idle');
 
   // Autocomplete suggesties
   const [suggestions, setSuggestions] = useState<RubricSearchResult[]>([]);
@@ -165,13 +172,34 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
 
   const handleSubmit = () => {
     if (name.trim() && hasRemedies) {
-      onAdd(name.trim(), combinedRemedyText);
+      const rubricName = name.trim();
+      const remedyText = combinedRemedyText;
+      onAdd(rubricName, remedyText);
+      setLastAddedRubric({ name: rubricName, remedyString: remedyText });
+      setShareStatus('idle');
       setName('');
       setGrade4('');
       setGrade3('');
       setGrade2('');
       setGrade1('');
     }
+  };
+
+  const handleShareLastRubric = async () => {
+    if (!lastAddedRubric || !onShareRubric) return;
+    setShareStatus('sharing');
+    try {
+      const ok = await onShareRubric(lastAddedRubric.name, lastAddedRubric.remedyString);
+      setShareStatus(ok ? 'shared' : 'error');
+    } catch {
+      setShareStatus('error');
+    }
+  };
+
+  const handleSelectFromCommunity = (rubricName: string, remedyString: string) => {
+    setName(rubricName);
+    fillFromRemedyString(remedyString);
+    setShowCommunity(false);
   };
 
   const handleSelectFromLibrary = (rubric: SavedRubric) => {
@@ -205,18 +233,30 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
           </h3>
           <div className="h-px flex-1 bg-warm-border-subtle hidden sm:block" />
         </div>
-        {savedRubrics && savedRubrics.length > 0 && (
+        <div className="flex gap-2">
+          {savedRubrics && savedRubrics.length > 0 && (
+            <button
+              onClick={() => { setShowLibrary(!showLibrary); setShowCommunity(false); }}
+              className={`btn-secondary ${
+                showLibrary
+                  ? '!bg-gold-light !border-gold/30 !text-sienna'
+                  : ''
+              }`}
+            >
+              Bibliotheek ({savedRubrics.length})
+            </button>
+          )}
           <button
-            onClick={() => setShowLibrary(!showLibrary)}
+            onClick={() => { setShowCommunity(!showCommunity); setShowLibrary(false); }}
             className={`btn-secondary ${
-              showLibrary
-                ? '!bg-gold-light !border-gold/30 !text-sienna'
+              showCommunity
+                ? '!bg-forest-light !border-forest/30 !text-forest'
                 : ''
             }`}
           >
-            Bibliotheek ({savedRubrics.length})
+            🌐 Community
           </button>
-        )}
+        </div>
       </div>
 
       {/* Rubriekenbibliotheek */}
@@ -258,6 +298,14 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             )}
           </div>
         </div>
+      )}
+
+      {/* Community rubrieken */}
+      {showCommunity && (
+        <SharedRubricLibrary
+          onSelect={handleSelectFromCommunity}
+          onClose={() => setShowCommunity(false)}
+        />
       )}
 
       <div className="space-y-3">
@@ -524,7 +572,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
         )}
 
         {/* Submit knoppen */}
-        <div className="flex gap-3 pt-1">
+        <div className="flex items-center gap-3 pt-1">
           <button
             onClick={handleSubmit}
             disabled={!name.trim() || !hasRemedies}
@@ -532,6 +580,35 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
           >
             Rubriek toevoegen
           </button>
+
+          {/* Deel met community link (na toevoegen) */}
+          {lastAddedRubric && onShareRubric && isSupabaseAvailable() && (
+            <div className="flex items-center gap-2 animate-fade-in">
+              {shareStatus === 'idle' && (
+                <button
+                  onClick={handleShareLastRubric}
+                  className="text-xs text-forest hover:text-forest/80 transition-colors font-body font-medium"
+                >
+                  🌐 Deel &ldquo;{lastAddedRubric.name.length > 30 ? lastAddedRubric.name.slice(0, 30) + '...' : lastAddedRubric.name}&rdquo; met community
+                </button>
+              )}
+              {shareStatus === 'sharing' && (
+                <span className="text-xs text-forest font-body" style={{ animation: 'gentlePulse 1.5s ease-in-out infinite' }}>
+                  Delen...
+                </span>
+              )}
+              {shareStatus === 'shared' && (
+                <span className="text-xs text-forest font-body font-semibold">
+                  Gedeeld met community!
+                </span>
+              )}
+              {shareStatus === 'error' && (
+                <span className="text-xs text-danger font-body">
+                  Kon niet delen — probeer opnieuw
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { createSampleCase, createSampleLibrary } from '@/lib/sampleData';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { lookupRemedies } from '@/lib/repertoryLookup';
 import { checkForSharedCase, clearShareParam } from '@/lib/shareCase';
+import { shareRubric } from '@/lib/sharedRubrics';
 import CaseManager from '@/components/CaseManager';
 import RubricInput from '@/components/RubricInput';
 import RepertorisationTable from '@/components/RepertorisationTable';
@@ -27,11 +28,21 @@ export default function Home() {
   const [activeCaseId, setActiveCaseId] = useLocalStorage<string | null>('repertorisatie-active-case', null);
   const [sampleLoaded, setSampleLoaded] = useLocalStorage<boolean>('repertorisatie-sample-loaded', false);
   const [savedRubrics, setSavedRubrics] = useLocalStorage<SavedRubric[]>('repertorisatie-rubric-library', []);
+  const [contributorName, setContributorName] = useLocalStorage<string>('repertorisatie-contributor', '');
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [nameInput, setNameInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [prefillRubricName, setPrefillRubricName] = useState<string | null>(null);
   const [prefillRemedyString, setPrefillRemedyString] = useState<string | null>(null);
   const [isLoadingRemedies, setIsLoadingRemedies] = useState(false);
   const [importedCase, setImportedCase] = useState<Case | null>(null);
+
+  // Toon naamprompt als contributor nog niet ingesteld is
+  useEffect(() => {
+    if (mounted && !contributorName) {
+      setShowNamePrompt(true);
+    }
+  }, [mounted, contributorName]);
 
   // Check of er een gedeelde casus in de URL zit
   useEffect(() => {
@@ -171,6 +182,12 @@ export default function Home() {
     }));
   }, [activeCaseId, updateCase]);
 
+  // Deel een rubriek met de community via Supabase
+  const handleShareRubric = useCallback(async (name: string, remedyString: string): Promise<boolean> => {
+    const result = await shareRubric(name, remedyString, contributorName || 'Anoniem');
+    return result.success;
+  }, [contributorName]);
+
   // Toon een lege container tijdens SSR om hydration mismatch te voorkomen
   if (!mounted) {
     return (
@@ -241,6 +258,15 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {contributorName && (
+                <button
+                  onClick={() => { setNameInput(contributorName); setShowNamePrompt(true); }}
+                  className="text-[10px] text-cream/30 hover:text-cream/60 font-body hidden sm:block transition-colors"
+                  title="Naam wijzigen"
+                >
+                  {contributorName}
+                </button>
+              )}
               <span className="text-xs text-cream/25 font-body hidden sm:block">
                 {cases.length} {cases.length === 1 ? 'casus' : 'casussen'}
               </span>
@@ -289,6 +315,50 @@ export default function Home() {
         </div>
       )}
 
+      {/* Naam prompt voor community */}
+      {showNamePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-deep/30 backdrop-blur-[2px] animate-fade-in">
+          <div className="card-materia w-full max-w-sm mx-4 overflow-hidden shadow-xl">
+            <div className="bg-forest-dark px-5 py-4">
+              <h3 className="font-display text-lg font-semibold text-cream">Welkom!</h3>
+              <p className="text-xs text-cream/50 font-body mt-0.5">
+                Hoe heet je? Je naam wordt getoond als je rubrieken deelt.
+              </p>
+            </div>
+            <div className="p-5 space-y-4">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && nameInput.trim()) {
+                    setContributorName(nameInput.trim());
+                    setShowNamePrompt(false);
+                  }
+                }}
+                placeholder="bijv. Ruby"
+                className="input-materia w-full text-center text-lg"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setContributorName(nameInput.trim() || 'Anoniem');
+                    setShowNamePrompt(false);
+                  }}
+                  className="btn-primary flex-1"
+                >
+                  {nameInput.trim() ? 'Opslaan' : 'Anoniem doorgaan'}
+                </button>
+              </div>
+              <p className="text-[10px] text-warm-text-muted/60 font-body text-center">
+                Je kunt dit later altijd wijzigen
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Case Manager */}
@@ -319,6 +389,8 @@ export default function Home() {
                   setPrefillRubricName(null);
                   setPrefillRemedyString(null);
                 }}
+                contributorName={contributorName}
+                onShareRubric={handleShareRubric}
               />
             </div>
 
