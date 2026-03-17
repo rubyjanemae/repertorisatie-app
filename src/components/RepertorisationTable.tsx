@@ -1,10 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Rubric, RemedyTally, SortConfig, SortField, FilterConfig } from '@/lib/types';
+import { Rubric, SortConfig, SortField, FilterConfig } from '@/lib/types';
 import { tallyRemedies, sortTally, filterTally } from '@/lib/tallyRemedies';
 import { gradeBgColor, gradeToDisplay } from '@/lib/parseRemedies';
 import { lookupRemedy } from '@/lib/remedyDatabase';
+import RemedyCard from './RemedyCard';
 
 interface RepertorisationTableProps {
   rubrics: Rubric[];
@@ -20,6 +21,8 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
   const [expandedRemedy, setExpandedRemedy] = useState<string | null>(null);
   const [showRubricList, setShowRubricList] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [cardRemedy, setCardRemedy] = useState<string | null>(null);
+  const [cardAnchorRect, setCardAnchorRect] = useState<DOMRect | null>(null);
 
   const tally = useMemo(() => tallyRemedies(rubrics), [rubrics]);
   const filtered = useMemo(() => filterTally(tally, filter), [tally, filter]);
@@ -43,22 +46,22 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
 
   if (rubrics.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-        <p className="text-lg mb-1">Nog geen rubrieken</p>
-        <p className="text-sm">Voeg hierboven een rubriek toe om te beginnen met repertoriseren.</p>
+      <div className="card-materia p-10 text-center">
+        <p className="font-display text-xl text-warm-text-secondary italic mb-1">Nog geen rubrieken</p>
+        <p className="text-sm text-warm-text-muted font-body">Voeg hierboven een rubriek toe om te beginnen met repertoriseren.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="card-materia overflow-hidden">
       {/* Header bar */}
-      <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-5 py-4 border-b border-warm-border-subtle flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+          <h3 className="font-display text-xl font-semibold text-warm-text">
             Repertorisatie
           </h3>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-warm-text-muted font-body mt-0.5">
             {sorted.length} middelen uit {rubrics.length} rubrieken
             {filter.minScore > 0 || filter.minRubrics > 0 || filter.searchTerm
               ? ` (gefilterd uit ${tally.length})`
@@ -70,16 +73,16 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
         <div className="flex gap-2">
           <button
             onClick={() => setShowRubricList(!showRubricList)}
-            className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600"
+            className="btn-secondary"
           >
             {showRubricList ? 'Verberg rubrieken' : `Rubrieken (${rubrics.length})`}
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`text-xs border px-3 py-1.5 rounded-lg transition-colors ${
+            className={`btn-secondary ${
               showFilters || filter.minScore > 0 || filter.minRubrics > 0 || filter.searchTerm
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? '!border-forest/30 !bg-forest-light !text-forest'
+                : ''
             }`}
           >
             Filters {(filter.minScore > 0 || filter.minRubrics > 0 || filter.searchTerm) && '●'}
@@ -89,20 +92,20 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
 
       {/* Rubrieken overzicht */}
       {showRubricList && (
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
+        <div className="px-5 py-3 border-b border-warm-border-subtle bg-parchment/50 animate-fade-in">
           <div className="space-y-1.5">
             {rubrics.map((r, idx) => (
               <div key={r.id} className="flex items-center justify-between text-sm group">
-                <span className="text-gray-700">
-                  <span className="text-gray-400 font-mono mr-2">R{idx + 1}</span>
+                <span className="text-warm-text-secondary font-body">
+                  <span className="text-warm-text-muted font-mono mr-2 text-xs">R{idx + 1}</span>
                   {r.name}
-                  <span className="text-gray-400 ml-2">({r.remedies.length} middelen)</span>
+                  <span className="text-warm-text-muted ml-2">({r.remedies.length} middelen)</span>
                 </span>
                 <button
                   onClick={() => {
                     if (confirm(`Rubriek "${r.name}" verwijderen?`)) onDeleteRubric(r.id);
                   }}
-                  className="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="text-xs text-danger/50 hover:text-danger opacity-0 group-hover:opacity-100 transition-all font-body"
                 >
                   Verwijder
                 </button>
@@ -114,44 +117,44 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
 
       {/* Filter bar */}
       {showFilters && (
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap gap-4 items-end">
+        <div className="px-5 py-3 border-b border-warm-border-subtle bg-parchment/50 flex flex-wrap gap-4 items-end animate-fade-in">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Zoek middel</label>
+            <label className="block text-[10px] text-warm-text-muted mb-1 font-body uppercase tracking-wider">Zoek middel</label>
             <input
               type="text"
               value={filter.searchTerm}
               onChange={e => setFilter(f => ({ ...f, searchTerm: e.target.value }))}
               placeholder="bijv. sulph"
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="input-materia w-40"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Min. score</label>
+            <label className="block text-[10px] text-warm-text-muted mb-1 font-body uppercase tracking-wider">Min. score</label>
             <input
               type="number"
               value={filter.minScore || ''}
               onChange={e => setFilter(f => ({ ...f, minScore: parseInt(e.target.value) || 0 }))}
               placeholder="0"
               min="0"
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-20 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="input-materia w-20"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Min. rubrieken</label>
+            <label className="block text-[10px] text-warm-text-muted mb-1 font-body uppercase tracking-wider">Min. rubrieken</label>
             <input
               type="number"
               value={filter.minRubrics || ''}
               onChange={e => setFilter(f => ({ ...f, minRubrics: parseInt(e.target.value) || 0 }))}
               placeholder="0"
               min="0"
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 w-20 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="input-materia w-20"
             />
           </div>
           <button
             onClick={() => setFilter({ minScore: 0, minRubrics: 0, searchTerm: '' })}
-            className="text-xs text-gray-500 hover:text-gray-700 pb-1"
+            className="text-xs text-warm-text-muted hover:text-warm-text pb-1.5 font-body transition-colors"
           >
-            Reset filters
+            Reset
           </button>
         </div>
       )}
@@ -160,29 +163,29 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-8">
+            <tr className="border-b border-warm-border-subtle bg-forest-dark">
+              <th className="text-left px-5 py-3 text-[10px] font-body font-semibold text-cream/50 uppercase tracking-widest w-8">
                 #
               </th>
               <th
-                className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-emerald-600"
+                className="text-left px-3 py-3 text-[10px] font-body font-semibold text-cream/50 uppercase tracking-widest cursor-pointer hover:text-cream transition-colors"
                 onClick={() => toggleSort('name')}
               >
                 Middel {sortIcon('name')}
               </th>
               <th
-                className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-emerald-600 w-24"
+                className="text-center px-3 py-3 text-[10px] font-body font-semibold text-cream/50 uppercase tracking-widest cursor-pointer hover:text-cream transition-colors w-24"
                 onClick={() => toggleSort('totalScore')}
               >
                 Score {sortIcon('totalScore')}
               </th>
               <th
-                className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-emerald-600 w-24"
+                className="text-center px-3 py-3 text-[10px] font-body font-semibold text-cream/50 uppercase tracking-widest cursor-pointer hover:text-cream transition-colors w-24"
                 onClick={() => toggleSort('rubricCount')}
               >
                 Rubr. {sortIcon('rubricCount')}
               </th>
-              <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <th className="text-left px-3 py-3 text-[10px] font-body font-semibold text-cream/50 uppercase tracking-widest">
                 Per rubriek
               </th>
             </tr>
@@ -191,35 +194,50 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
             {visibleItems.map((item, idx) => (
               <tr
                 key={item.name}
-                className={`border-b border-gray-50 hover:bg-emerald-50/30 cursor-pointer transition-colors ${
-                  idx < 3 ? 'bg-emerald-50/50' : ''
+                className={`border-b border-warm-border-subtle/50 cursor-pointer transition-colors duration-150 ${
+                  idx < 3
+                    ? 'bg-forest-light/40 hover:bg-forest-light/60'
+                    : idx % 2 === 0
+                    ? 'bg-warm-white hover:bg-parchment/70'
+                    : 'bg-parchment/30 hover:bg-parchment/70'
                 }`}
                 onClick={() => setExpandedRemedy(expandedRemedy === item.name ? null : item.name)}
               >
-                <td className="px-5 py-2.5 text-gray-400 font-mono text-xs">
+                <td className="px-5 py-2.5 text-warm-text-muted font-mono text-xs">
                   {idx + 1}
                 </td>
-                <td className="px-3 py-2.5 font-medium text-gray-800">
-                  <span title={lookupRemedy(item.name)?.fullName || item.name}>
-                    {item.name}
-                  </span>
-                  {lookupRemedy(item.name) && (
-                    <span className="block text-[10px] text-gray-400 font-normal leading-tight">
-                      {lookupRemedy(item.name)!.fullName}
+                <td className="px-3 py-2.5 font-body font-medium text-warm-text">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setCardRemedy(item.name);
+                      setCardAnchorRect(rect);
+                    }}
+                    className="text-left hover:text-forest transition-colors group"
+                    title={`${lookupRemedy(item.name)?.fullName || item.name} — klik voor profiel`}
+                  >
+                    <span className="group-hover:underline decoration-forest/30 underline-offset-2">
+                      {item.name}
                     </span>
-                  )}
+                    {lookupRemedy(item.name) && (
+                      <span className="block text-[10px] text-warm-text-muted font-display italic leading-tight group-hover:text-forest/60">
+                        {lookupRemedy(item.name)!.fullName}
+                      </span>
+                    )}
+                  </button>
                 </td>
                 <td className="px-3 py-2.5 text-center">
-                  <span className={`inline-block min-w-[2.5rem] text-center font-bold rounded-full px-2 py-0.5 text-xs ${
-                    item.totalScore >= 15 ? 'bg-red-100 text-red-700' :
-                    item.totalScore >= 10 ? 'bg-orange-100 text-orange-700' :
-                    item.totalScore >= 5 ? 'bg-amber-100 text-amber-700' :
-                    'bg-gray-100 text-gray-600'
+                  <span className={`inline-block min-w-[2.5rem] text-center font-display font-bold rounded-full px-2 py-0.5 text-xs ${
+                    item.totalScore >= 15 ? 'bg-grade-4-bg text-grade-4' :
+                    item.totalScore >= 10 ? 'bg-grade-3-bg text-grade-3' :
+                    item.totalScore >= 5 ? 'bg-gold-light text-sienna' :
+                    'bg-grade-1-bg text-grade-1'
                   }`}>
                     {item.totalScore}
                   </span>
                 </td>
-                <td className="px-3 py-2.5 text-center text-gray-600">
+                <td className="px-3 py-2.5 text-center text-warm-text-secondary font-mono text-xs">
                   {item.rubricCount}/{rubrics.length}
                 </td>
                 <td className="px-3 py-2.5">
@@ -229,7 +247,7 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
                       return (
                         <span
                           key={i}
-                          className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded ${gradeBgColor(pr.grade)}`}
+                          className={`inline-flex items-center text-[10px] px-1.5 py-0.5 rounded font-mono ${gradeBgColor(pr.grade)}`}
                           title={pr.rubricName}
                         >
                           R{rubricIdx + 1}:{gradeToDisplay(pr.grade)}
@@ -246,8 +264,8 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
 
       {/* Toon meer / Toon alles knoppen */}
       {sorted.length > PAGE_SIZE && (
-        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
-          <p className="text-xs text-gray-400">
+        <div className="px-5 py-3 border-t border-warm-border-subtle flex items-center justify-between bg-parchment/30">
+          <p className="text-xs text-warm-text-muted font-body">
             {isShowingAll
               ? `Alle ${sorted.length} middelen zichtbaar`
               : `${visibleCount} van ${sorted.length} middelen — ${hiddenCount} verborgen`
@@ -258,13 +276,13 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
               <>
                 <button
                   onClick={() => setVisibleCount(prev => Math.min(prev + PAGE_SIZE, sorted.length))}
-                  className="text-xs border border-emerald-300 bg-emerald-50 text-emerald-700 px-4 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors font-medium"
+                  className="btn-secondary !border-forest/20 !bg-forest-light !text-forest"
                 >
                   Toon volgende {Math.min(PAGE_SIZE, hiddenCount)}
                 </button>
                 <button
                   onClick={() => setVisibleCount(sorted.length)}
-                  className="text-xs border border-gray-200 text-gray-600 px-4 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="btn-secondary"
                 >
                   Toon alles ({sorted.length})
                 </button>
@@ -273,7 +291,7 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
             {isShowingAll && (
               <button
                 onClick={() => setVisibleCount(PAGE_SIZE)}
-                className="text-xs border border-gray-200 text-gray-600 px-4 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                className="btn-secondary"
               >
                 Toon top {PAGE_SIZE}
               </button>
@@ -282,21 +300,35 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
         </div>
       )}
 
+      {/* Remedy profiel popup */}
+      {cardRemedy && (
+        <RemedyCard
+          remedyAbbr={cardRemedy}
+          anchorRect={cardAnchorRect}
+          onClose={() => { setCardRemedy(null); setCardAnchorRect(null); }}
+        />
+      )}
+
       {/* Expanded detail */}
       {expandedRemedy && (
-        <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
+        <div className="px-5 py-4 border-t border-warm-border bg-parchment/50 animate-fade-in">
           {(() => {
             const item = sorted.find(s => s.name === expandedRemedy);
             if (!item) return null;
             return (
               <div>
-                <h4 className="font-semibold text-gray-800 mb-2">{item.name} — Totaal: {item.totalScore}</h4>
-                <div className="space-y-1">
+                <h4 className="font-display text-lg font-semibold text-warm-text mb-3">
+                  {item.name}
+                  <span className="text-warm-text-muted font-body text-sm font-normal ml-2">
+                    Totaal: {item.totalScore}
+                  </span>
+                </h4>
+                <div className="space-y-1.5">
                   {item.perRubric.map((pr, i) => {
                     const rubricIdx = rubrics.findIndex(r => r.id === pr.rubricId);
                     return (
-                      <div key={i} className="text-sm text-gray-600 flex items-center gap-2">
-                        <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded ${gradeBgColor(pr.grade)}`}>
+                      <div key={i} className="text-sm text-warm-text-secondary flex items-center gap-2 font-body">
+                        <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded font-mono ${gradeBgColor(pr.grade)}`}>
                           {gradeToDisplay(pr.grade)} Graad {pr.grade}
                         </span>
                         <span>R{rubricIdx + 1}: {pr.rubricName}</span>

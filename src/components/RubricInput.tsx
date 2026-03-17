@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { SavedRubric, Remedy } from '@/lib/types';
+import { SavedRubric } from '@/lib/types';
 import { parseRemedies, mergeRemedyStrings, gradeBgColor, gradeToDisplay, MergeResult } from '@/lib/parseRemedies';
 import { searchRubrics, lookupRemediesDirect, RubricSearchResult } from '@/lib/repertoryLookup';
 
@@ -197,41 +197,44 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
     .sort((a, b) => b.lastUsed - a.lastUsed);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm mb-6">
+    <div className="card-materia p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-          Nieuwe rubriek toevoegen
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-display text-lg font-semibold text-warm-text">
+            Nieuwe rubriek
+          </h3>
+          <div className="h-px flex-1 bg-warm-border-subtle hidden sm:block" />
+        </div>
         {savedRubrics && savedRubrics.length > 0 && (
           <button
             onClick={() => setShowLibrary(!showLibrary)}
-            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+            className={`btn-secondary ${
               showLibrary
-                ? 'bg-amber-50 border-amber-300 text-amber-700'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                ? '!bg-gold-light !border-gold/30 !text-sienna'
+                : ''
             }`}
           >
-            📚 Bibliotheek ({savedRubrics.length})
+            Bibliotheek ({savedRubrics.length})
           </button>
         )}
       </div>
 
       {/* Rubriekenbibliotheek */}
       {showLibrary && (
-        <div className="mb-4 border border-amber-200 rounded-lg bg-amber-50/50 overflow-hidden">
-          <div className="px-3 py-2 border-b border-amber-200 bg-amber-50">
+        <div className="mb-4 border border-gold/20 rounded-lg bg-gold-light/30 overflow-hidden animate-fade-in">
+          <div className="px-3 py-2 border-b border-gold/15 bg-gold-light/50">
             <input
               type="text"
               value={librarySearch}
               onChange={e => setLibrarySearch(e.target.value)}
               placeholder="Zoek in opgeslagen rubrieken..."
-              className="w-full border border-amber-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white"
+              className="input-materia w-full !bg-warm-white"
               autoFocus
             />
           </div>
-          <div className="max-h-60 overflow-y-auto divide-y divide-amber-100">
+          <div className="max-h-60 overflow-y-auto divide-y divide-gold/10">
             {filteredLibrary.length === 0 ? (
-              <p className="text-center text-gray-400 text-sm py-4">
+              <p className="text-center text-warm-text-muted text-sm py-4 font-display italic">
                 {librarySearch ? 'Geen rubrieken gevonden' : 'Nog geen opgeslagen rubrieken'}
               </p>
             ) : (
@@ -239,15 +242,15 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                 <button
                   key={i}
                   onClick={() => handleSelectFromLibrary(rubric)}
-                  className="w-full text-left px-3 py-2.5 hover:bg-amber-100/50 transition-colors group"
+                  className="w-full text-left px-3 py-2.5 hover:bg-gold-light/40 transition-colors group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-800 group-hover:text-amber-800">
+                    <span className="text-sm font-medium text-warm-text group-hover:text-sienna font-body">
                       {rubric.name}
                     </span>
-                    <span className="text-[10px] text-gray-400 flex items-center gap-2">
+                    <span className="text-[10px] text-warm-text-muted flex items-center gap-2 font-body">
                       <span>{rubric.remedyCount} middelen</span>
-                      <span className="text-amber-500">→ invullen</span>
+                      <span className="text-gold opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
                     </span>
                   </div>
                 </button>
@@ -260,7 +263,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
       <div className="space-y-3">
         {/* Rubriek naam met autocomplete */}
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-body font-semibold text-warm-text-secondary mb-1.5 uppercase tracking-wider">
             Rubriek naam
           </label>
           <input
@@ -270,15 +273,15 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="bijv. Generals - Sun - exposure to sun"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="input-materia w-full"
           />
 
           {/* Autocomplete suggesties dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-20 w-full mt-1 bg-white border border-emerald-200 rounded-lg shadow-lg overflow-hidden">
-              <div className="px-3 py-1.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-                <span className="text-[10px] text-emerald-600 font-medium">Suggesties uit Repertorium Publicum</span>
-                <span className="text-[10px] text-emerald-400">{suggestions.length} resultaten</span>
+            <div className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in">
+              <div className="px-3 py-1.5 bg-forest-light/50 border-b border-forest/10 flex items-center justify-between">
+                <span className="text-[10px] text-forest font-body font-semibold uppercase tracking-wider">Repertorium Publicum</span>
+                <span className="text-[10px] text-warm-text-muted font-body">{suggestions.length} resultaten</span>
               </div>
               <div className="max-h-72 overflow-y-auto">
                 {suggestions.map((s, i) => {
@@ -292,15 +295,15 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                       key={i}
                       onMouseDown={e => e.preventDefault()}
                       onClick={() => handleSuggestionClick(s)}
-                      className="w-full text-left px-3 py-2.5 hover:bg-emerald-50 transition-colors border-b last:border-b-0 border-gray-100 group cursor-pointer"
+                      className="w-full text-left px-3 py-2.5 hover:bg-forest-light/30 transition-colors border-b last:border-b-0 border-warm-border-subtle/50 group cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-sm">
-                          <span className="font-semibold text-emerald-700">{chapter}</span>
-                          <span className="text-gray-600">{rest}</span>
+                        <span className="text-sm font-body">
+                          <span className="font-semibold text-forest">{chapter}</span>
+                          <span className="text-warm-text-secondary">{rest}</span>
                         </span>
-                        <span className="ml-auto text-[10px] text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                          klik om in te vullen
+                        <span className="ml-auto text-[10px] text-forest opacity-0 group-hover:opacity-100 transition-opacity shrink-0 font-body">
+                          invullen
                         </span>
                       </div>
                     </button>
@@ -314,15 +317,15 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
         {/* Middelen per graad */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-xs font-body font-semibold text-warm-text-secondary uppercase tracking-wider">
               Middelen
               {(isLoadingRemedies || isLoadingSuggestion) && (
-                <span className="ml-2 text-emerald-600 font-normal animate-pulse">
-                  ⏳ Middelen opzoeken...
+                <span className="ml-2 text-forest font-normal normal-case tracking-normal" style={{ animation: 'gentlePulse 1.5s ease-in-out infinite' }}>
+                  Middelen opzoeken...
                 </span>
               )}
               {!isLoadingRemedies && !isLoadingSuggestion && hasRemedies && (
-                <span className="ml-2 text-gray-400 font-normal text-xs">
+                <span className="ml-2 text-warm-text-muted font-normal text-[11px] normal-case tracking-normal">
                   ({totalCount} totaal)
                 </span>
               )}
@@ -330,7 +333,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             {hasRemedies && (
               <button
                 onClick={handleClearAll}
-                className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                className="text-[10px] text-warm-text-muted hover:text-danger transition-colors font-body"
               >
                 Alles wissen
               </button>
@@ -338,9 +341,9 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
           </div>
 
           {(isLoadingRemedies || isLoadingSuggestion) && (
-            <div className="flex items-center justify-center py-6 border border-emerald-200 rounded-lg bg-emerald-50/30">
-              <div className="flex items-center gap-2 text-emerald-600 text-sm">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+            <div className="flex items-center justify-center py-6 border border-forest/15 rounded-lg bg-forest-light/30">
+              <div className="flex items-center gap-2 text-forest text-sm font-body">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
@@ -358,7 +361,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                 onChange={setGrade4}
                 label="4-waardig"
                 placeholder="bijv. sulph, lyc, phos..."
-                inputClassName="font-bold uppercase text-red-800"
+                inputClassName="font-bold uppercase text-grade-4"
                 accentColor="red"
                 count={splitNames(grade4).length}
               />
@@ -369,7 +372,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                 onChange={setGrade3}
                 label="3-waardig"
                 placeholder="bijv. acon, bell, nux-v..."
-                inputClassName="font-semibold uppercase text-orange-800"
+                inputClassName="font-semibold uppercase text-grade-3"
                 accentColor="orange"
                 count={splitNames(grade3).length}
               />
@@ -380,7 +383,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                 onChange={setGrade2}
                 label="2-waardig"
                 placeholder="bijv. apis, bry, puls..."
-                inputClassName="italic text-blue-800"
+                inputClassName="italic text-grade-2"
                 accentColor="blue"
                 count={splitNames(grade2).length}
               />
@@ -391,7 +394,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                 onChange={setGrade1}
                 label="1-waardig"
                 placeholder="bijv. arn, cham, ign..."
-                inputClassName="text-gray-600"
+                inputClassName="text-grade-1"
                 accentColor="gray"
                 count={splitNames(grade1).length}
               />
@@ -403,7 +406,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             <div className="mt-2">
               <button
                 onClick={() => { setShowMerge(true); setMergeText(''); setMergeResult(null); }}
-                className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                className="text-xs text-sienna hover:text-sienna/80 transition-colors font-body font-medium"
               >
                 + Samenvoegen met Synthesis
               </button>
@@ -413,17 +416,17 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
 
         {/* Samenvoegen panel */}
         {showMerge && (
-          <div className="border border-blue-200 rounded-lg bg-blue-50/50 overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-blue-200 bg-blue-50 flex items-center justify-between">
+          <div className="border border-info/20 rounded-lg bg-info-light/30 overflow-hidden animate-fade-in">
+            <div className="px-4 py-2.5 border-b border-info/15 bg-info-light/50 flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-semibold text-blue-800">Samenvoegen</h4>
-                <p className="text-[10px] text-blue-600">Plak middelen uit Synthesis — dubbelen worden gefilterd, hoogste graad wint</p>
+                <h4 className="text-sm font-display font-semibold text-info">Samenvoegen</h4>
+                <p className="text-[10px] text-info/70 font-body">Plak middelen uit Synthesis — dubbelen gefilterd, hoogste graad wint</p>
               </div>
               <button
                 onClick={() => { setShowMerge(false); setMergeText(''); setMergeResult(null); }}
-                className="text-blue-400 hover:text-blue-700 text-sm px-1.5"
+                className="text-warm-text-muted hover:text-warm-text text-sm px-1.5 transition-colors"
               >
-                ✕
+                &times;
               </button>
             </div>
             <div className="p-3 space-y-3">
@@ -432,7 +435,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                 onChange={e => { setMergeText(e.target.value); setMergeResult(null); }}
                 placeholder="Plak hier de middelen uit Synthesis..."
                 rows={3}
-                className="w-full border border-blue-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-y"
+                className="input-materia w-full font-mono resize-y"
                 autoFocus
               />
               <div className="flex items-center gap-2">
@@ -444,7 +447,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                     }
                   }}
                   disabled={!mergeText.trim()}
-                  className="bg-blue-600 text-white text-xs font-medium px-4 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="text-xs font-body font-semibold px-4 py-1.5 rounded-lg transition-all duration-200 bg-info text-white hover:bg-info/90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Vergelijk
                 </button>
@@ -456,7 +459,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                       setMergeText('');
                       setMergeResult(null);
                     }}
-                    className="bg-emerald-600 text-white text-xs font-medium px-4 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors"
+                    className="btn-primary text-xs py-1.5"
                   >
                     Toepassen ({mergeResult.totalCount} middelen)
                   </button>
@@ -465,32 +468,32 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
 
               {/* Merge resultaat */}
               {mergeResult && (
-                <div className="border border-blue-200 rounded-lg p-3 bg-white text-xs space-y-2">
-                  <div className="flex flex-wrap gap-3 text-sm">
-                    <span className="text-gray-600">
-                      Totaal: <strong>{mergeResult.totalCount}</strong> middelen
+                <div className="border border-warm-border-subtle rounded-lg p-3 bg-warm-white text-xs space-y-2 animate-fade-in">
+                  <div className="flex flex-wrap gap-3 text-sm font-body">
+                    <span className="text-warm-text-secondary">
+                      Totaal: <strong className="text-warm-text">{mergeResult.totalCount}</strong>
                     </span>
                     {mergeResult.addedCount > 0 && (
-                      <span className="text-green-700">
+                      <span className="text-forest font-semibold">
                         +{mergeResult.addedCount} nieuw
                       </span>
                     )}
                     {mergeResult.upgradedCount > 0 && (
-                      <span className="text-amber-700">
-                        ↑{mergeResult.upgradedCount} verhoogd
+                      <span className="text-gold font-semibold">
+                        &uarr;{mergeResult.upgradedCount} verhoogd
                       </span>
                     )}
-                    <span className="text-gray-400">
+                    <span className="text-warm-text-muted">
                       {mergeResult.unchangedCount} ongewijzigd
                     </span>
                   </div>
 
                   {mergeResult.addedCount > 0 && (
                     <div>
-                      <p className="text-green-700 font-medium mb-1">Nieuw toegevoegd:</p>
+                      <p className="text-forest font-body font-semibold mb-1">Nieuw toegevoegd:</p>
                       <div className="flex flex-wrap gap-1">
                         {mergeResult.added.map((r, i) => (
-                          <span key={i} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border border-green-300 bg-green-50 ${gradeBgColor(r.grade)}`}>
+                          <span key={i} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border border-forest/15 font-mono text-[11px] ${gradeBgColor(r.grade)}`}>
                             {r.displayName} {gradeToDisplay(r.grade)}
                           </span>
                         ))}
@@ -500,11 +503,11 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
 
                   {mergeResult.upgradedCount > 0 && (
                     <div>
-                      <p className="text-amber-700 font-medium mb-1">Graad verhoogd:</p>
+                      <p className="text-gold font-body font-semibold mb-1">Graad verhoogd:</p>
                       <div className="flex flex-wrap gap-1">
                         {mergeResult.upgraded.map((u, i) => (
-                          <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800">
-                            {u.remedy.displayName} {gradeToDisplay(u.oldGrade)}→{gradeToDisplay(u.newGrade)}
+                          <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border border-gold/20 bg-gold-light text-sienna font-mono text-[11px]">
+                            {u.remedy.displayName} {gradeToDisplay(u.oldGrade)}&rarr;{gradeToDisplay(u.newGrade)}
                           </span>
                         ))}
                       </div>
@@ -512,7 +515,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                   )}
 
                   {mergeResult.addedCount === 0 && mergeResult.upgradedCount === 0 && (
-                    <p className="text-gray-500 italic">Alle middelen staan al in de lijst — niets om toe te voegen.</p>
+                    <p className="text-warm-text-muted font-display italic">Alle middelen staan al in de lijst — niets om toe te voegen.</p>
                   )}
                 </div>
               )}
@@ -521,11 +524,11 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
         )}
 
         {/* Submit knoppen */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-1">
           <button
             onClick={handleSubmit}
             disabled={!name.trim() || !hasRemedies}
-            className="bg-emerald-600 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="btn-primary"
           >
             Rubriek toevoegen
           </button>
@@ -556,33 +559,33 @@ function GradeInput({
   count: number;
 }) {
   const borderColors = {
-    red: 'border-red-200 focus-within:border-red-400 focus-within:ring-red-200',
-    orange: 'border-orange-200 focus-within:border-orange-400 focus-within:ring-orange-200',
-    blue: 'border-blue-200 focus-within:border-blue-400 focus-within:ring-blue-200',
-    gray: 'border-gray-200 focus-within:border-gray-400 focus-within:ring-gray-200',
+    red: 'border-grade-4/25 focus-within:border-grade-4/50 focus-within:ring-grade-4/10',
+    orange: 'border-grade-3/25 focus-within:border-grade-3/50 focus-within:ring-grade-3/10',
+    blue: 'border-grade-2/25 focus-within:border-grade-2/50 focus-within:ring-grade-2/10',
+    gray: 'border-warm-border focus-within:border-warm-text-muted/50 focus-within:ring-warm-text-muted/10',
   };
 
   const badgeColors = {
-    red: 'bg-red-100 text-red-800',
-    orange: 'bg-orange-100 text-orange-800',
-    blue: 'bg-blue-100 text-blue-800',
-    gray: 'bg-gray-100 text-gray-700',
+    red: 'bg-grade-4-bg text-grade-4',
+    orange: 'bg-grade-3-bg text-grade-3',
+    blue: 'bg-grade-2-bg text-grade-2',
+    gray: 'bg-grade-1-bg text-grade-1',
   };
 
   const bgColors = {
-    red: value.trim() ? 'bg-red-50/30' : 'bg-white',
-    orange: value.trim() ? 'bg-orange-50/30' : 'bg-white',
-    blue: value.trim() ? 'bg-blue-50/30' : 'bg-white',
-    gray: 'bg-white',
+    red: value.trim() ? 'bg-grade-4-bg/20' : 'bg-warm-white',
+    orange: value.trim() ? 'bg-grade-3-bg/20' : 'bg-warm-white',
+    blue: value.trim() ? 'bg-grade-2-bg/20' : 'bg-warm-white',
+    gray: 'bg-warm-white',
   };
 
   return (
-    <div className={`flex items-start gap-2 border rounded-lg px-3 py-2 transition-all focus-within:ring-1 ${borderColors[accentColor]} ${bgColors[accentColor]}`}>
+    <div className={`flex items-start gap-2 border rounded-lg px-3 py-2 transition-all duration-200 focus-within:ring-2 ${borderColors[accentColor]} ${bgColors[accentColor]}`}>
       <div className="flex items-center gap-1.5 pt-0.5 shrink-0">
-        <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${badgeColors[accentColor]}`}>
+        <span className={`grade-badge w-5 h-5 text-[10px] ${badgeColors[accentColor]}`}>
           {grade}
         </span>
-        <span className="text-[10px] text-gray-400 w-14">{label}</span>
+        <span className="text-[10px] text-warm-text-muted font-body w-14">{label}</span>
       </div>
       <textarea
         value={value}
@@ -598,7 +601,7 @@ function GradeInput({
         }}
       />
       {count > 0 && (
-        <span className={`text-[10px] pt-1 shrink-0 ${badgeColors[accentColor]} px-1.5 py-0.5 rounded-full`}>
+        <span className={`text-[10px] pt-1 shrink-0 font-body font-semibold px-1.5 py-0.5 rounded-full ${badgeColors[accentColor]}`}>
           {count}
         </span>
       )}

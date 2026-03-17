@@ -117,21 +117,21 @@ export function gradeToDisplay(grade: number): string {
  */
 export function gradeColor(grade: number): string {
   switch (grade) {
-    case 1: return 'text-gray-500';
-    case 2: return 'text-blue-600 font-medium';
-    case 3: return 'text-orange-600 font-bold';
-    case 4: return 'text-red-600 font-extrabold';
-    default: return 'text-gray-400';
+    case 1: return 'text-grade-1';
+    case 2: return 'text-grade-2 font-medium';
+    case 3: return 'text-grade-3 font-bold';
+    case 4: return 'text-grade-4 font-extrabold';
+    default: return 'text-warm-text-muted';
   }
 }
 
 export function gradeBgColor(grade: number): string {
   switch (grade) {
-    case 1: return 'bg-gray-100 text-gray-700';
-    case 2: return 'bg-blue-100 text-blue-800';
-    case 3: return 'bg-orange-100 text-orange-800';
-    case 4: return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-50 text-gray-500';
+    case 1: return 'bg-grade-1-bg text-grade-1';
+    case 2: return 'bg-grade-2-bg text-grade-2';
+    case 3: return 'bg-grade-3-bg text-grade-3';
+    case 4: return 'bg-grade-4-bg text-grade-4';
+    default: return 'bg-parchment text-warm-text-muted';
   }
 }
 

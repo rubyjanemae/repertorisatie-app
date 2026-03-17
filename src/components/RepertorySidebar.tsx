@@ -73,7 +73,7 @@ export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: Re
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/30 z-50 transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-forest-deep/50 backdrop-blur-[2px] z-50 transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -81,36 +81,40 @@ export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: Re
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 w-80 bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 w-80 bg-warm-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out border-r border-warm-border ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="bg-emerald-700 text-white px-4 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">📖</span>
+        <div className="bg-forest-dark text-cream px-4 py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gold">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
             <div>
-              <h2 className="font-semibold text-sm">Repertorium</h2>
-              <p className="text-emerald-200 text-[10px]">{repertoryChapters.length} hoofdstukken</p>
+              <h2 className="font-display font-semibold text-sm text-cream">Repertorium</h2>
+              <p className="text-cream/30 text-[10px] font-body">{repertoryChapters.length} hoofdstukken</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-lg bg-forest hover:bg-forest-muted flex items-center justify-center transition-colors"
             title="Sluiten (Esc)"
           >
-            <span className="text-sm">✕</span>
+            <span className="text-cream/60 text-sm">&times;</span>
           </button>
         </div>
+        <div className="decorative-rule-dark" />
 
         {/* Zoekbalk */}
-        <div className="px-3 py-2.5 border-b border-gray-200 bg-gray-50 shrink-0">
+        <div className="px-3 py-2.5 border-b border-warm-border-subtle bg-parchment/50 shrink-0">
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="Zoek hoofdstuk of rubriek..."
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="input-materia w-full"
             autoFocus={isOpen}
           />
         </div>
@@ -118,40 +122,40 @@ export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: Re
         {/* Hoofdstukken lijst */}
         <div className="flex-1 overflow-y-auto">
           {filteredChapters.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-8">
+            <p className="text-center text-warm-text-muted text-sm py-8 font-display italic">
               Geen resultaten gevonden
             </p>
           ) : (
             filteredChapters.map(chapter => (
-              <div key={chapter.name} className="border-b border-gray-100">
+              <div key={chapter.name} className="border-b border-warm-border-subtle/50">
                 {/* Hoofdstuk header */}
                 <button
                   onClick={() => toggleChapter(chapter.name)}
-                  className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-emerald-50 transition-colors group ${
-                    isExpanded(chapter.name) ? 'bg-emerald-50/50' : ''
+                  className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-forest-light/40 transition-colors group ${
+                    isExpanded(chapter.name) ? 'bg-forest-light/20' : ''
                   }`}
                 >
                   <span className="text-base shrink-0">{chapter.icon}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-gray-800 group-hover:text-emerald-800 truncate">
+                      <span className="text-sm font-display font-semibold text-warm-text group-hover:text-forest truncate">
                         {chapter.name}
                       </span>
                     </div>
-                    <span className="text-[10px] text-gray-400">
-                      {chapter.nameDutch} · {countSubRubrics(chapter)} rubrieken
+                    <span className="text-[10px] text-warm-text-muted font-body">
+                      {chapter.nameDutch} &middot; {countSubRubrics(chapter)} rubrieken
                     </span>
                   </div>
-                  <span className={`text-gray-400 text-xs transition-transform duration-200 ${
+                  <span className={`text-warm-text-muted text-xs transition-transform duration-200 ${
                     isExpanded(chapter.name) ? 'rotate-90' : ''
                   }`}>
-                    ▶
+                    &#9654;
                   </span>
                 </button>
 
                 {/* Subrubrieken */}
                 {isExpanded(chapter.name) && (
-                  <div className="bg-gray-50/50 pb-1">
+                  <div className="bg-parchment/30 pb-1 animate-fade-in">
                     {chapter.subRubrics.map(sub => (
                       <SubRubricItem
                         key={sub.fullPath}
@@ -171,8 +175,8 @@ export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: Re
         </div>
 
         {/* Footer hint */}
-        <div className="px-3 py-2 border-t border-gray-200 bg-gray-50 shrink-0">
-          <p className="text-[10px] text-gray-400 text-center">
+        <div className="px-3 py-2 border-t border-warm-border-subtle bg-parchment/50 shrink-0">
+          <p className="text-[10px] text-warm-text-muted/60 text-center font-body italic">
             Klik op een rubriek om de naam in te vullen
           </p>
         </div>
@@ -208,7 +212,7 @@ function SubRubricItem({
     return (
       <>
         {text.slice(0, idx)}
-        <span className="bg-yellow-200 rounded-sm">{text.slice(idx, idx + searchQuery.length)}</span>
+        <span className="bg-gold-light rounded-sm text-sienna">{text.slice(idx, idx + searchQuery.length)}</span>
         {text.slice(idx + searchQuery.length)}
       </>
     );
@@ -219,7 +223,7 @@ function SubRubricItem({
       <div className={`flex items-center ${pl} pr-3`}>
         <button
           onClick={() => onSelect(sub.fullPath)}
-          className="flex-1 text-left py-1.5 text-sm text-gray-700 hover:text-emerald-700 transition-colors truncate"
+          className="flex-1 text-left py-1.5 text-sm text-warm-text-secondary font-body hover:text-forest transition-colors truncate"
           title={sub.fullPath}
         >
           {highlightMatch(sub.name)}
@@ -227,7 +231,7 @@ function SubRubricItem({
         {hasChildren && (
           <button
             onClick={(e) => { e.stopPropagation(); onToggleChildren(); }}
-            className="text-[10px] text-gray-400 hover:text-emerald-600 px-1.5 py-0.5 rounded hover:bg-emerald-100 transition-colors shrink-0"
+            className="text-[10px] text-warm-text-muted hover:text-forest px-1.5 py-0.5 rounded hover:bg-forest-light transition-colors shrink-0 font-body"
           >
             {isChildExpanded ? '▼' : `+${sub.children!.length}`}
           </button>
@@ -236,12 +240,12 @@ function SubRubricItem({
 
       {/* Kinderen (dieper niveau) */}
       {hasChildren && isChildExpanded && (
-        <div className="bg-emerald-50/30">
+        <div className="bg-forest-light/20 animate-fade-in">
           {sub.children!.map(child => (
             <button
               key={child.fullPath}
               onClick={() => onSelect(child.fullPath)}
-              className="w-full text-left pl-14 pr-3 py-1 text-xs text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors truncate"
+              className="w-full text-left pl-14 pr-3 py-1 text-xs text-warm-text-muted font-body hover:text-forest hover:bg-forest-light/40 transition-colors truncate"
               title={child.fullPath}
             >
               ↳ {highlightMatch(child.name)}

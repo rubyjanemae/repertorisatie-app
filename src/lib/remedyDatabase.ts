@@ -415,6 +415,7 @@ export const remedyDatabase: RemedyInfo[] = [
   { abbr: 'sul-i', fullName: 'Sulphur Iodatum' },
   { abbr: 'sulph', fullName: 'Sulphur' },
   { abbr: 'sumb', fullName: 'Sumbulus Moschatus' },
+  { abbr: 'symph', fullName: 'Symphytum Officinale' },
   { abbr: 'syph', fullName: 'Syphilinum' },
 
   // T

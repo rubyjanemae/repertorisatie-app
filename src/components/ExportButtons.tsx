@@ -1,6 +1,6 @@
 'use client';
 
-import { Rubric, RemedyTally, Case } from '@/lib/types';
+import { Rubric, Case } from '@/lib/types';
 import { tallyRemedies, sortTally } from '@/lib/tallyRemedies';
 import { generateShareUrl } from '@/lib/shareCase';
 import { useMemo, useState } from 'react';
@@ -85,27 +85,27 @@ export default function ExportButtons({ caseName, rubrics, activeCase }: ExportB
   <meta charset="UTF-8">
   <title>Repertorisatie: ${caseName}</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 2rem; max-width: 1200px; margin: 0 auto; color: #333; }
-    h1 { color: #065f46; border-bottom: 2px solid #065f46; padding-bottom: 0.5rem; }
-    h2 { color: #047857; margin-top: 2rem; }
-    .meta { color: #666; margin-bottom: 2rem; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 2rem; max-width: 1200px; margin: 0 auto; color: #2d2a24; background: #faf7f2; }
+    h1 { color: #3d6b4e; border-bottom: 2px solid #c4973b; padding-bottom: 0.5rem; font-family: Georgia, serif; }
+    h2 { color: #3d6b4e; margin-top: 2rem; font-family: Georgia, serif; }
+    .meta { color: #6b6456; margin-bottom: 2rem; }
     table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-    th { background: #065f46; color: white; padding: 8px 12px; text-align: left; font-size: 0.85rem; }
-    td { padding: 6px 12px; border-bottom: 1px solid #e5e7eb; font-size: 0.85rem; }
-    tr:nth-child(even) { background: #f9fafb; }
-    tr:hover { background: #ecfdf5; }
-    .top3 { background: #ecfdf5 !important; font-weight: 600; }
-    .grade-1 { color: #6b7280; }
-    .grade-2 { color: #2563eb; font-weight: 500; }
-    .grade-3 { color: #ea580c; font-weight: 700; }
-    .grade-4 { color: #dc2626; font-weight: 800; }
+    th { background: #2d3830; color: #faf7f2; padding: 8px 12px; text-align: left; font-size: 0.85rem; }
+    td { padding: 6px 12px; border-bottom: 1px solid #e8dfd0; font-size: 0.85rem; }
+    tr:nth-child(even) { background: #f5f0e8; }
+    tr:hover { background: #e8f0eb; }
+    .top3 { background: #e8f0eb !important; font-weight: 600; }
+    .grade-1 { color: #8a8379; }
+    .grade-2 { color: #3468a3; font-weight: 500; }
+    .grade-3 { color: #c77c2a; font-weight: 700; }
+    .grade-4 { color: #a62b1f; font-weight: 800; }
     .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; margin: 1px; }
-    .badge-1 { background: #f3f4f6; color: #4b5563; }
-    .badge-2 { background: #dbeafe; color: #1e40af; }
-    .badge-3 { background: #ffedd5; color: #c2410c; }
-    .badge-4 { background: #fee2e2; color: #b91c1c; }
+    .badge-1 { background: #f0ede8; color: #8a8379; }
+    .badge-2 { background: #e5eef8; color: #3468a3; }
+    .badge-3 { background: #fef3e2; color: #c77c2a; }
+    .badge-4 { background: #fde8e5; color: #a62b1f; }
     .rubric-list { margin-top: 0.5rem; }
-    .rubric-item { padding: 4px 0; color: #555; font-size: 0.85rem; }
+    .rubric-item { padding: 4px 0; color: #6b6456; font-size: 0.85rem; }
   </style>
 </head>
 <body>
@@ -180,44 +180,44 @@ export default function ExportButtons({ caseName, rubrics, activeCase }: ExportB
   };
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      <span className="text-xs text-gray-500 self-center mr-1">Exporteer:</span>
+    <div className="flex flex-wrap items-center gap-2 mb-5">
+      <span className="text-[11px] text-warm-text-muted font-body uppercase tracking-wider mr-1">Exporteer</span>
       <button
         onClick={exportAsText}
-        className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+        className="btn-secondary"
       >
-        📄 Tekst
+        Tekst
       </button>
       <button
         onClick={exportAsCsv}
-        className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+        className="btn-secondary"
       >
-        📊 CSV (Excel)
+        CSV
       </button>
       <button
         onClick={exportAsHtml}
-        className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors"
+        className="btn-secondary"
       >
-        🌐 HTML (print)
+        HTML
       </button>
       {activeCase && (
         <>
-          <span className="text-gray-300 self-center">|</span>
+          <span className="w-px h-4 bg-warm-border-subtle mx-1" />
           <button
             onClick={handleShare}
-            className={`text-xs px-3 py-1.5 rounded-lg transition-colors font-medium ${
+            className={`text-xs px-3 py-1.5 rounded-lg transition-all duration-200 font-medium font-body border ${
               shareStatus === 'copied'
-                ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                ? 'bg-forest-light text-forest border-forest/20'
                 : shareStatus === 'json-copied'
-                ? 'bg-amber-100 text-amber-700 border border-amber-300'
-                : 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+                ? 'bg-gold-light text-sienna border-gold/30'
+                : 'bg-sienna-light text-sienna border-sienna/20 hover:bg-sienna-light/80 hover:border-sienna/30'
             }`}
           >
             {shareStatus === 'copied'
-              ? '✓ Link gekopieerd!'
+              ? '✓ Link gekopieerd'
               : shareStatus === 'json-copied'
-              ? '✓ JSON gekopieerd (te groot voor link)'
-              : '🔗 Deel casus'}
+              ? '✓ JSON gekopieerd'
+              : 'Deel casus'}
           </button>
         </>
       )}
