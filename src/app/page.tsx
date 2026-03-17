@@ -174,18 +174,12 @@ export default function Home() {
   // Toon een lege container tijdens SSR om hydration mismatch te voorkomen
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50/30">
-        <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gray-200 animate-pulse" />
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
-                <span className="text-white text-lg font-bold">R</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Repertorisatie</h1>
-                <p className="text-xs text-gray-500">Homeopathische acute anamnese</p>
-              </div>
+      <div className="min-h-screen bg-parchment">
+        <header className="bg-forest-dark/95 backdrop-blur-xl sticky top-0 z-40 border-b border-white/[0.06]">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5">
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-white/10 animate-pulse" />
+              <span className="font-display text-xl text-cream tracking-tight">Repertorisatie</span>
             </div>
           </div>
         </header>
@@ -194,7 +188,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-emerald-50/30">
+    <div className="min-h-screen bg-parchment">
       {/* Repertorium Sidebar */}
       <RepertorySidebar
         isOpen={sidebarOpen}
@@ -216,33 +210,39 @@ export default function Home() {
           }
         }}
       />
+
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+      <header className="bg-forest-dark/95 backdrop-blur-xl sticky top-0 z-40 border-b border-white/[0.06]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3.5">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${
+                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
                   sidebarOpen
-                    ? 'bg-emerald-600 text-white border-emerald-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-emerald-50 hover:text-emerald-700'
+                    ? 'bg-gold/20 text-gold'
+                    : 'text-cream/50 hover:bg-white/10 hover:text-cream'
                 }`}
                 title="Repertorium openen"
               >
-                <span className="text-lg">📖</span>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
               </button>
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
-                <span className="text-white text-lg font-bold">R</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Repertorisatie</h1>
-                <p className="text-xs text-gray-500">Homeopathische acute anamnese</p>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold/30 to-gold/10 flex items-center justify-center">
+                  <span className="font-display text-gold text-sm italic">RP</span>
+                </div>
+                <div>
+                  <h1 className="font-display text-lg text-cream tracking-tight leading-tight">Repertorisatie</h1>
+                  <p className="text-[10px] text-cream/30 font-body tracking-wider uppercase">Acute Anamnese</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-gray-400">
-                {cases.length} {cases.length === 1 ? 'casus' : 'casussen'} opgeslagen
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-cream/25 font-body hidden sm:block">
+                {cases.length} {cases.length === 1 ? 'casus' : 'casussen'}
               </span>
               <TranslationTool />
             </div>
@@ -252,14 +252,15 @@ export default function Home() {
 
       {/* Import banner voor gedeelde casussen */}
       {importedCase && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4">
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 animate-fade-in-up">
+          <div className="card-materia border-gold/30 bg-gold-light/50 p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-indigo-800">
-                📥 Gedeelde casus ontvangen: <span className="text-indigo-600">&ldquo;{importedCase.name}&rdquo;</span>
+              <p className="text-sm font-semibold text-warm-text font-display text-lg">
+                Gedeelde casus ontvangen
               </p>
-              <p className="text-xs text-indigo-600 mt-0.5">
-                {importedCase.rubrics.length} rubrieken · Klik op &ldquo;Importeer&rdquo; om deze toe te voegen
+              <p className="text-xs text-warm-text-secondary mt-0.5">
+                <span className="font-semibold text-sienna">&ldquo;{importedCase.name}&rdquo;</span>
+                {' '}&middot; {importedCase.rubrics.length} rubrieken
               </p>
             </div>
             <div className="flex gap-2">
@@ -270,7 +271,7 @@ export default function Home() {
                   setImportedCase(null);
                   clearShareParam();
                 }}
-                className="text-sm bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                className="btn-primary text-sm"
               >
                 Importeer
               </button>
@@ -279,7 +280,7 @@ export default function Home() {
                   setImportedCase(null);
                   clearShareParam();
                 }}
-                className="text-sm text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
+                className="btn-secondary"
               >
                 Negeer
               </button>
@@ -289,55 +290,65 @@ export default function Home() {
       )}
 
       {/* Main */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Case Manager */}
-        <CaseManager
-          cases={cases}
-          activeCaseId={activeCaseId}
-          onSelectCase={setActiveCaseId}
-          onCreateCase={handleCreateCase}
-          onRenameCase={handleRenameCase}
-          onDeleteCase={handleDeleteCase}
-          onDuplicateCase={handleDuplicateCase}
-        />
+        <div className="animate-fade-in-up stagger-1">
+          <CaseManager
+            cases={cases}
+            activeCaseId={activeCaseId}
+            onSelectCase={setActiveCaseId}
+            onCreateCase={handleCreateCase}
+            onRenameCase={handleRenameCase}
+            onDeleteCase={handleDeleteCase}
+            onDuplicateCase={handleDuplicateCase}
+          />
+        </div>
 
         {/* Actieve casus content */}
         {activeCase ? (
           <>
             {/* Rubriek invoer */}
-            <RubricInput
-              onAdd={handleAddRubric}
-              savedRubrics={savedRubrics}
-              prefillRubricName={prefillRubricName}
-              prefillRemedyString={prefillRemedyString}
-              isLoadingRemedies={isLoadingRemedies}
-              onPrefillConsumed={() => {
-                setPrefillRubricName(null);
-                setPrefillRemedyString(null);
-              }}
-            />
+            <div className="animate-fade-in-up stagger-2">
+              <RubricInput
+                onAdd={handleAddRubric}
+                savedRubrics={savedRubrics}
+                prefillRubricName={prefillRubricName}
+                prefillRemedyString={prefillRemedyString}
+                isLoadingRemedies={isLoadingRemedies}
+                onPrefillConsumed={() => {
+                  setPrefillRubricName(null);
+                  setPrefillRemedyString(null);
+                }}
+              />
+            </div>
 
             {/* Export knoppen */}
-            <ExportButtons caseName={activeCase.name} rubrics={activeCase.rubrics} activeCase={activeCase} />
+            <div className="animate-fade-in-up stagger-3">
+              <ExportButtons caseName={activeCase.name} rubrics={activeCase.rubrics} activeCase={activeCase} />
+            </div>
 
             {/* Repertorisatie tabel */}
-            <RepertorisationTable
-              rubrics={activeCase.rubrics}
-              onDeleteRubric={handleDeleteRubric}
-            />
+            <div className="animate-fade-in-up stagger-4">
+              <RepertorisationTable
+                rubrics={activeCase.rubrics}
+                onDeleteRubric={handleDeleteRubric}
+              />
+            </div>
           </>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">📋</span>
+          <div className="card-materia p-14 text-center animate-fade-in-up stagger-2">
+            <div className="w-16 h-16 rounded-2xl bg-forest-light border border-forest/10 flex items-center justify-center mx-auto mb-5">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-forest">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
             </div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">Geen casus geselecteerd</h2>
-            <p className="text-gray-400 mb-4">
-              Maak een nieuwe casus aan of selecteer een bestaande om te beginnen.
+            <h2 className="font-display text-2xl font-semibold text-warm-text mb-2">Geen casus geselecteerd</h2>
+            <p className="text-warm-text-muted mb-6 max-w-md mx-auto">
+              Maak een nieuwe casus aan of selecteer een bestaande om te beginnen met repertoriseren.
             </p>
             <button
               onClick={() => handleCreateCase('Nieuwe casus')}
-              className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+              className="btn-primary text-sm"
             >
               + Nieuwe casus
             </button>
@@ -345,6 +356,13 @@ export default function Home() {
         )}
       </main>
 
+      {/* Footer */}
+      <footer className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 pt-4">
+        <div className="decorative-rule mb-5" />
+        <p className="text-center text-[10px] text-warm-text-muted/40 font-body tracking-widest uppercase">
+          Repertorisatie · Homeopathische Analyse
+        </p>
+      </footer>
     </div>
   );
 }
