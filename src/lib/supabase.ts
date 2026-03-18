@@ -17,8 +17,13 @@ export function getSupabase(): SupabaseClient | null {
     return null;
   }
 
-  supabaseInstance = createClient(url, key);
-  return supabaseInstance;
+  try {
+    supabaseInstance = createClient(url, key);
+    return supabaseInstance;
+  } catch (err) {
+    console.warn('Supabase client kon niet aangemaakt worden:', err);
+    return null;
+  }
 }
 
 /** Check of Supabase beschikbaar is */

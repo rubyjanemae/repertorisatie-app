@@ -91,7 +91,9 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
   const [suggestions, setSuggestions] = useState<RubricSearchResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const suppressSuggestionsRef = useRef(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const totalCount = useMemo(() => countRemedies(grade4, grade3, grade2, grade1), [grade4, grade3, grade2, grade1]);
   const combinedRemedyText = useMemo(() => combineGrades(grade4, grade3, grade2, grade1), [grade4, grade3, grade2, grade1]);
@@ -123,21 +125,24 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
         const results = await searchRubrics(name, 10);
         setSuggestions(results);
         setShowSuggestions(results.length > 0);
+        setHighlightedIndex(-1);
       } catch {
         setSuggestions([]);
         setShowSuggestions(false);
+        setHighlightedIndex(-1);
       }
     }, 300);
 
     return () => clearTimeout(timer);
   }, [name]);
 
-  // Klik op een autocomplete suggestie
+  // Klik of Enter op een autocomplete suggestie
   const handleSuggestionClick = useCallback(async (suggestion: RubricSearchResult) => {
     suppressSuggestionsRef.current = true;
     setName(suggestion.displayPath);
     setShowSuggestions(false);
     setSuggestions([]);
+    setHighlightedIndex(-1);
 
     // Laad de middelen voor deze rubriek
     setIsLoadingSuggestion(true);
@@ -152,6 +157,39 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
       setIsLoadingSuggestion(false);
     }
   }, [fillFromRemedyString]);
+
+  // Keyboard navigatie voor autocomplete (↑ ↓ Enter Escape)
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => {
+        const next = prev < suggestions.length - 1 ? prev + 1 : 0;
+        setTimeout(() => {
+          const el = suggestionsRef.current?.querySelector(`[data-index="${next}"]`);
+          el?.scrollIntoView({ block: 'nearest' });
+        }, 0);
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => {
+        const next = prev > 0 ? prev - 1 : suggestions.length - 1;
+        setTimeout(() => {
+          const el = suggestionsRef.current?.querySelector(`[data-index="${next}"]`);
+          el?.scrollIntoView({ block: 'nearest' });
+        }, 0);
+        return next;
+      });
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      handleSuggestionClick(suggestions[highlightedIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+    }
+  }, [showSuggestions, suggestions, highlightedIndex, handleSuggestionClick]);
 
   // Consumeer prefill van de sidebar (rubriektitel)
   useEffect(() => {
@@ -318,40 +356,59 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
+            onKeyDown={handleKeyDown}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            onBlur={() => setTimeout(() => { setShowSuggestions(false); setHighlightedIndex(-1); }, 200)}
             placeholder="bijv. Generals - Sun - exposure to sun"
             className="input-materia w-full"
+            role="combobox"
+            aria-expanded={showSuggestions}
+            aria-activedescendant={highlightedIndex >= 0 ? `suggestion-${highlightedIndex}` : undefined}
           />
 
           {/* Autocomplete suggesties dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in">
+            <div className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in" role="listbox">
               <div className="px-3 py-1.5 bg-forest-light/50 border-b border-forest/10 flex items-center justify-between">
                 <span className="text-[10px] text-forest font-body font-semibold uppercase tracking-wider">Repertorium Publicum</span>
-                <span className="text-[10px] text-warm-text-muted font-body">{suggestions.length} resultaten</span>
+                <span className="text-[10px] text-warm-text-muted font-body">
+                  {suggestions.length} resultaten
+                  <span className="text-warm-text-muted/50 ml-1">· ↑↓ navigeer · Enter selecteer</span>
+                </span>
               </div>
-              <div className="max-h-72 overflow-y-auto">
+              <div className="max-h-72 overflow-y-auto" ref={suggestionsRef}>
                 {suggestions.map((s, i) => {
                   // Markeer de eerste " - " als scheidslijn tussen hoofdstuk en subrubriek
                   const dashIdx = s.displayPath.indexOf(' - ');
                   const chapter = dashIdx > -1 ? s.displayPath.slice(0, dashIdx) : s.displayPath;
                   const rest = dashIdx > -1 ? s.displayPath.slice(dashIdx) : '';
+                  const isHighlighted = i === highlightedIndex;
 
                   return (
                     <button
                       key={i}
+                      id={`suggestion-${i}`}
+                      data-index={i}
+                      role="option"
+                      aria-selected={isHighlighted}
                       onMouseDown={e => e.preventDefault()}
+                      onMouseEnter={() => setHighlightedIndex(i)}
                       onClick={() => handleSuggestionClick(s)}
-                      className="w-full text-left px-3 py-2.5 hover:bg-forest-light/30 transition-colors border-b last:border-b-0 border-warm-border-subtle/50 group cursor-pointer"
+                      className={`w-full text-left px-3 py-2.5 transition-colors border-b last:border-b-0 border-warm-border-subtle/50 group cursor-pointer ${
+                        isHighlighted
+                          ? 'bg-forest-light/60 ring-1 ring-inset ring-forest/20'
+                          : 'hover:bg-forest-light/30'
+                      }`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-body">
-                          <span className="font-semibold text-forest">{chapter}</span>
+                          <span className={`font-semibold ${isHighlighted ? 'text-forest-dark' : 'text-forest'}`}>{chapter}</span>
                           <span className="text-warm-text-secondary">{rest}</span>
                         </span>
-                        <span className="ml-auto text-[10px] text-forest opacity-0 group-hover:opacity-100 transition-opacity shrink-0 font-body">
-                          invullen
+                        <span className={`ml-auto text-[10px] text-forest shrink-0 font-body transition-opacity ${
+                          isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}>
+                          invullen ↵
                         </span>
                       </div>
                     </button>
