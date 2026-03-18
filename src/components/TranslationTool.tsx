@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { searchTranslations, TranslationEntry } from '@/lib/translations';
 import { searchRemedies, RemedyInfo } from '@/lib/remedyDatabase';
+import RemedyCard from './RemedyCard';
 
 type Tab = 'vertaling' | 'middelen';
 
@@ -12,6 +13,8 @@ export default function TranslationTool() {
   const [remedyResults, setRemedyResults] = useState<RemedyInfo[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('vertaling');
+  const [cardRemedy, setCardRemedy] = useState<string | null>(null);
+  const [cardAnchorRect, setCardAnchorRect] = useState<DOMRect | null>(null);
 
   const handleSearch = (value: string) => {
     setQuery(value);
@@ -159,10 +162,19 @@ export default function TranslationTool() {
                 ) : (
                   <div className="divide-y divide-warm-border-subtle/50">
                     {remedyResults.slice(0, 50).map((remedy, i) => (
-                      <div key={i} className="px-4 py-2.5 hover:bg-parchment/50 flex items-center gap-3 transition-colors">
+                      <button
+                        key={i}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setCardRemedy(remedy.abbr);
+                          setCardAnchorRect(rect);
+                        }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-forest-light/30 flex items-center gap-3 transition-colors group cursor-pointer"
+                      >
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-forest font-mono">
+                            <span className="text-sm font-bold text-forest font-mono group-hover:underline">
                               {remedy.abbr}
                             </span>
                             <span className="text-warm-text-muted text-xs">&mdash;</span>
@@ -171,7 +183,10 @@ export default function TranslationTool() {
                             </span>
                           </div>
                         </div>
-                      </div>
+                        <span className="text-[10px] text-forest opacity-0 group-hover:opacity-100 transition-opacity font-body">
+                          profiel
+                        </span>
+                      </button>
                     ))}
                     {remedyResults.length > 50 && (
                       <p className="text-center text-warm-text-muted text-xs py-2 font-body">
@@ -184,6 +199,15 @@ export default function TranslationTool() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Remedy profiel popup */}
+      {cardRemedy && cardAnchorRect && (
+        <RemedyCard
+          remedyAbbr={cardRemedy}
+          anchorRect={cardAnchorRect}
+          onClose={() => { setCardRemedy(null); setCardAnchorRect(null); }}
+        />
       )}
     </div>
   );
