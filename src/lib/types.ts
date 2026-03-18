@@ -60,3 +60,30 @@ export interface SavedRubric {
   lastUsed: number;       // Timestamp
   usageCount: number;     // Hoe vaak gebruikt
 }
+
+// Differentiaal Diagnose
+export type DDCategory = 'causa' | 'mind' | 'pijnSensatie' | 'uitscheiding' | 'modErger' | 'modBeter' | 'sleutelSx';
+
+export const DD_CATEGORIES: { key: DDCategory; label: string; icon: string }[] = [
+  { key: 'causa', label: 'Causa', icon: '⚡' },
+  { key: 'mind', label: 'Mind / CP', icon: '🧠' },
+  { key: 'pijnSensatie', label: 'Pijn / Sensatie', icon: '💢' },
+  { key: 'uitscheiding', label: 'Uitscheiding', icon: '💧' },
+  { key: 'modErger', label: 'Mod <', icon: '🔴' },
+  { key: 'modBeter', label: 'Mod >', icon: '🟢' },
+  { key: 'sleutelSx', label: 'Sleutel SX', icon: '🔑' },
+];
+
+export interface DDRemedyData {
+  abbr: string;
+  fullName: string;
+  cells: Record<DDCategory, string>;  // tekst per categorie
+}
+
+export interface DifferentialDiagnosis {
+  id: string;
+  title: string;          // bijv. "Oorontsteking"
+  remedies: DDRemedyData[];
+  createdAt: number;
+  updatedAt: number;
+}

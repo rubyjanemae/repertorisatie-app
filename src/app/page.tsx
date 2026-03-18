@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Case, Rubric, SavedRubric } from '@/lib/types';
+import { Case, Rubric, SavedRubric, DifferentialDiagnosis } from '@/lib/types';
 import { parseRemedies } from '@/lib/parseRemedies';
 import { createSampleCase, createSampleLibrary } from '@/lib/sampleData';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -14,6 +14,7 @@ import RepertorisationTable from '@/components/RepertorisationTable';
 import ExportButtons from '@/components/ExportButtons';
 import TranslationTool from '@/components/TranslationTool';
 import RepertorySidebar from '@/components/RepertorySidebar';
+import DDBuilder from '@/components/DDBuilder';
 
 function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -29,6 +30,7 @@ export default function Home() {
   const [sampleLoaded, setSampleLoaded] = useLocalStorage<boolean>('repertorisatie-sample-loaded', false);
   const [savedRubrics, setSavedRubrics] = useLocalStorage<SavedRubric[]>('repertorisatie-rubric-library', []);
   const [contributorName, setContributorName] = useLocalStorage<string>('repertorisatie-contributor', '');
+  const [ddPerCase, setDdPerCase] = useLocalStorage<Record<string, DifferentialDiagnosis[]>>('repertorisatie-dd', {});
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -187,6 +189,13 @@ export default function Home() {
     const result = await shareRubric(name, remedyString, contributorName || 'Anoniem');
     return result.success;
   }, [contributorName]);
+
+  // DD per casus
+  const activeDDList = activeCaseId ? (ddPerCase[activeCaseId] || []) : [];
+  const handleDDUpdate = useCallback((newList: DifferentialDiagnosis[]) => {
+    if (!activeCaseId) return;
+    setDdPerCase(prev => ({ ...prev, [activeCaseId]: newList }));
+  }, [activeCaseId, setDdPerCase]);
 
   // Toon een lege container tijdens SSR om hydration mismatch te voorkomen
   if (!mounted) {
@@ -404,6 +413,14 @@ export default function Home() {
               <RepertorisationTable
                 rubrics={activeCase.rubrics}
                 onDeleteRubric={handleDeleteRubric}
+              />
+            </div>
+
+            {/* Differentiaal Diagnose */}
+            <div className="animate-fade-in-up stagger-4">
+              <DDBuilder
+                ddList={activeDDList}
+                onUpdate={handleDDUpdate}
               />
             </div>
           </>
