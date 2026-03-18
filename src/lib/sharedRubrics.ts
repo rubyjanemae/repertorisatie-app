@@ -40,7 +40,7 @@ export async function fetchSharedRubrics(search?: string): Promise<SharedRubric[
 
 /**
  * Deel een rubriek met de community.
- * Upsert: als de rubrieknaam al bestaat, wordt deze bijgewerkt.
+ * Insert eerst, en als de naam al bestaat (duplicate), update dan.
  */
 export async function shareRubric(
   name: string,
@@ -53,22 +53,40 @@ export async function shareRubric(
   }
 
   const remedyCount = parseRemedies(remedyString).length;
+  const trimmedName = name.trim();
+  const data = {
+    name: trimmedName,
+    remedy_string: remedyString.trim(),
+    remedy_count: remedyCount,
+    contributor: contributor.trim() || 'Anoniem',
+  };
 
-  const { error } = await supabase
+  // Probeer insert
+  const { error: insertError } = await supabase
     .from('shared_rubrics')
-    .upsert(
-      {
-        name: name.trim(),
-        remedy_string: remedyString.trim(),
-        remedy_count: remedyCount,
-        contributor: contributor.trim() || 'Anoniem',
-      },
-      { onConflict: 'name' }
-    );
+    .insert(data);
 
-  if (error) {
-    console.warn('Kon rubriek niet delen:', error.message);
-    return { success: false, error: error.message };
+  if (insertError) {
+    // Duplicate name (unique constraint) — update bestaande rubriek
+    if (insertError.code === '23505') {
+      const { error: updateError } = await supabase
+        .from('shared_rubrics')
+        .update({
+          remedy_string: data.remedy_string,
+          remedy_count: data.remedy_count,
+          contributor: data.contributor,
+        })
+        .ilike('name', trimmedName);
+
+      if (updateError) {
+        console.warn('Kon rubriek niet updaten:', updateError.message);
+        return { success: false, error: updateError.message };
+      }
+      return { success: true };
+    }
+
+    console.warn('Kon rubriek niet delen:', insertError.message);
+    return { success: false, error: insertError.message };
   }
 
   return { success: true };
