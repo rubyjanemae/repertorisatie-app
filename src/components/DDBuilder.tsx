@@ -312,8 +312,6 @@ function DDCard({
 
 // ─── Hoofd DD Builder ───────────────────────────────────────
 export default function DDBuilder({ ddList, onUpdate }: DDBuilderProps) {
-  const [isExpanded, setIsExpanded] = useState(ddList.length > 0);
-
   const createDD = useCallback(() => {
     const newDD: DifferentialDiagnosis = {
       id: generateId(),
@@ -323,7 +321,6 @@ export default function DDBuilder({ ddList, onUpdate }: DDBuilderProps) {
       updatedAt: Date.now(),
     };
     onUpdate([...ddList, newDD]);
-    setIsExpanded(true);
   }, [ddList, onUpdate]);
 
   const updateDD = useCallback((id: string, updated: DifferentialDiagnosis) => {
@@ -335,30 +332,9 @@ export default function DDBuilder({ ddList, onUpdate }: DDBuilderProps) {
   }, [ddList, onUpdate]);
 
   return (
-    <div className="mt-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 group"
-        >
-          <svg
-            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            className={`text-warm-text-muted transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
-          >
-            <path d="m6 9 6 6 6-6"/>
-          </svg>
-          <h2 className="font-display text-lg font-semibold text-warm-text group-hover:text-forest transition-colors">
-            Differentiaal Diagnose
-          </h2>
-          {ddList.length > 0 && (
-            <span className="text-[10px] text-warm-text-muted font-body bg-parchment border border-warm-border-subtle px-2 py-0.5 rounded-full">
-              {ddList.length}
-            </span>
-          )}
-        </button>
-
+    <div>
+      {/* + Nieuwe DD knop */}
+      <div className="flex justify-end mb-4">
         <button
           onClick={createDD}
           className="btn-secondary text-xs flex items-center gap-1.5"
@@ -371,35 +347,36 @@ export default function DDBuilder({ ddList, onUpdate }: DDBuilderProps) {
       </div>
 
       {/* DD Lijst */}
-      {isExpanded && (
-        <div className="space-y-4 animate-fade-in">
-          {ddList.length === 0 ? (
-            <div className="card-materia p-8 text-center">
-              <div className="w-12 h-12 rounded-xl bg-forest-light border border-forest/10 flex items-center justify-center mx-auto mb-3">
-                <span className="text-xl">⚖️</span>
-              </div>
-              <p className="text-warm-text-muted font-display italic text-sm mb-1">
-                Nog geen differentiaal diagnoses
-              </p>
-              <p className="text-[10px] text-warm-text-muted/50 font-body mb-4">
-                Vergelijk 3-5 middelen naast elkaar per indicatie
-              </p>
-              <button onClick={createDD} className="btn-primary text-sm">
-                + Eerste DD maken
-              </button>
+      <div className="space-y-4">
+        {ddList.length === 0 ? (
+          <div className="card-materia p-10 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-sienna-light/50 border border-sienna/10 flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl">⚖️</span>
             </div>
-          ) : (
-            ddList.map(dd => (
-              <DDCard
-                key={dd.id}
-                dd={dd}
-                onUpdate={(updated) => updateDD(dd.id, updated)}
-                onDelete={() => deleteDD(dd.id)}
-              />
-            ))
-          )}
-        </div>
-      )}
+            <h3 className="font-display text-lg font-semibold text-warm-text mb-1">
+              Differentiaal Diagnose
+            </h3>
+            <p className="text-warm-text-muted font-body text-sm mb-1">
+              Vergelijk 3-5 middelen naast elkaar per indicatie
+            </p>
+            <p className="text-[10px] text-warm-text-muted/50 font-body mb-5">
+              Middelen worden automatisch gevuld vanuit de materia medica profielen
+            </p>
+            <button onClick={createDD} className="btn-primary text-sm">
+              + Eerste DD maken
+            </button>
+          </div>
+        ) : (
+          ddList.map(dd => (
+            <DDCard
+              key={dd.id}
+              dd={dd}
+              onUpdate={(updated) => updateDD(dd.id, updated)}
+              onDelete={() => deleteDD(dd.id)}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }

@@ -33,6 +33,7 @@ export default function Home() {
   const [ddPerCase, setDdPerCase] = useLocalStorage<Record<string, DifferentialDiagnosis[]>>('repertorisatie-dd', {});
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'repertorisatie' | 'dd'>('repertorisatie');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [prefillRubricName, setPrefillRubricName] = useState<string | null>(null);
   const [prefillRemedyString, setPrefillRemedyString] = useState<string | null>(null);
@@ -386,43 +387,93 @@ export default function Home() {
         {/* Actieve casus content */}
         {activeCase ? (
           <>
-            {/* Rubriek invoer */}
-            <div className="animate-fade-in-up stagger-2">
-              <RubricInput
-                onAdd={handleAddRubric}
-                savedRubrics={savedRubrics}
-                prefillRubricName={prefillRubricName}
-                prefillRemedyString={prefillRemedyString}
-                isLoadingRemedies={isLoadingRemedies}
-                onPrefillConsumed={() => {
-                  setPrefillRubricName(null);
-                  setPrefillRemedyString(null);
-                }}
-                contributorName={contributorName}
-                onShareRubric={handleShareRubric}
-              />
+            {/* Tab navigatie */}
+            <div className="animate-fade-in-up stagger-2 mb-4">
+              <div className="flex border-b border-warm-border-subtle">
+                <button
+                  onClick={() => setActiveTab('repertorisatie')}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-body font-semibold transition-all duration-200 border-b-2 -mb-px ${
+                    activeTab === 'repertorisatie'
+                      ? 'text-forest border-forest bg-forest-light/20'
+                      : 'text-warm-text-muted border-transparent hover:text-warm-text-secondary hover:bg-parchment/50'
+                  }`}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                    <path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                  </svg>
+                  Repertorisatie
+                  {activeCase.rubrics.length > 0 && (
+                    <span className="text-[10px] bg-forest-light text-forest px-1.5 py-0.5 rounded-full">
+                      {activeCase.rubrics.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab('dd')}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-sm font-body font-semibold transition-all duration-200 border-b-2 -mb-px ${
+                    activeTab === 'dd'
+                      ? 'text-sienna border-sienna bg-sienna-light/20'
+                      : 'text-warm-text-muted border-transparent hover:text-warm-text-secondary hover:bg-parchment/50'
+                  }`}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 3h5v5"/><path d="M8 3H3v5"/>
+                    <path d="M12 22v-8.3a4 4 0 00-1.172-2.872L3 3"/>
+                    <path d="m15 9 6-6"/>
+                  </svg>
+                  Differentiaal Diagnose
+                  {activeDDList.length > 0 && (
+                    <span className="text-[10px] bg-sienna-light text-sienna px-1.5 py-0.5 rounded-full">
+                      {activeDDList.length}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Export knoppen */}
-            <div className="animate-fade-in-up stagger-3">
-              <ExportButtons caseName={activeCase.name} rubrics={activeCase.rubrics} activeCase={activeCase} />
-            </div>
+            {/* Tab content */}
+            {activeTab === 'repertorisatie' ? (
+              <>
+                {/* Rubriek invoer */}
+                <div className="animate-fade-in-up stagger-2">
+                  <RubricInput
+                    onAdd={handleAddRubric}
+                    savedRubrics={savedRubrics}
+                    prefillRubricName={prefillRubricName}
+                    prefillRemedyString={prefillRemedyString}
+                    isLoadingRemedies={isLoadingRemedies}
+                    onPrefillConsumed={() => {
+                      setPrefillRubricName(null);
+                      setPrefillRemedyString(null);
+                    }}
+                    contributorName={contributorName}
+                    onShareRubric={handleShareRubric}
+                  />
+                </div>
 
-            {/* Repertorisatie tabel */}
-            <div className="animate-fade-in-up stagger-4">
-              <RepertorisationTable
-                rubrics={activeCase.rubrics}
-                onDeleteRubric={handleDeleteRubric}
-              />
-            </div>
+                {/* Export knoppen */}
+                <div className="animate-fade-in-up stagger-3">
+                  <ExportButtons caseName={activeCase.name} rubrics={activeCase.rubrics} activeCase={activeCase} />
+                </div>
 
-            {/* Differentiaal Diagnose */}
-            <div className="animate-fade-in-up stagger-4">
-              <DDBuilder
-                ddList={activeDDList}
-                onUpdate={handleDDUpdate}
-              />
-            </div>
+                {/* Repertorisatie tabel */}
+                <div className="animate-fade-in-up stagger-4">
+                  <RepertorisationTable
+                    rubrics={activeCase.rubrics}
+                    onDeleteRubric={handleDeleteRubric}
+                  />
+                </div>
+              </>
+            ) : (
+              /* Differentiaal Diagnose tab */
+              <div className="animate-fade-in">
+                <DDBuilder
+                  ddList={activeDDList}
+                  onUpdate={handleDDUpdate}
+                />
+              </div>
+            )}
           </>
         ) : (
           <div className="card-materia p-14 text-center animate-fade-in-up stagger-2">
