@@ -4,8 +4,9 @@
 export interface RemedyProfile {
   abbr: string;
   causa: string[];
+  centrumPathologie: string[];  // Affiniteit: organen/weefsels waar het middel op werkt
   pijnSensatie: string[];
-  opvallendheden: string[];
+  opvallendheden: string[];     // Mind + opvallende generals
   modaliteiten: {
     erger: string[];
     beter: string[];
@@ -18,6 +19,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'acon',
     causa: ['Afkoeling (koude droge wind)', 'Schrik/angst', 'Plotselinge kou'],
+    centrumPathologie: ['Slijmvliezen', 'Sensorisch zenuwstelsel', 'Hart'],
     pijnSensatie: ['Hevig, onverdraaglijk', 'Brandend', 'Tintelend/verdoofd'],
     opvallendheden: ['Grote angst en onrust', 'Angst voor de dood', 'Voorspelt tijdstip van overlijden', 'Extreme dorst'],
     modaliteiten: {
@@ -30,6 +32,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'apis',
     causa: ['Insectenbeten/-steken', 'Onderdrukking van uitslag', 'Jaloezie/verdriet'],
+    centrumPathologie: ['Huid', 'Slijmvliezen', 'Nieren', 'Sereuze vliezen'],
     pijnSensatie: ['Stekend', 'Brandend', 'Pijnlijk bij aanraking'],
     opvallendheden: ['Dorstloos ondanks koorts', 'Oedemateuze zwellingen', 'Rozig-rode zwelling', 'Jaloers, druk, rusteloos'],
     modaliteiten: {
@@ -42,6 +45,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'arn',
     causa: ['Trauma/verwonding', 'Overbelasting', 'Schok', 'Val/stoot'],
+    centrumPathologie: ['Bloedvaten', 'Spieren', 'Bindweefsel'],
     pijnSensatie: ['Gekneusd gevoel', 'Lamheid', 'Pijnlijk bij aanraking'],
     opvallendheden: ['Zegt dat er niets aan de hand is', 'Wil niet aangeraakt worden', 'Bed voelt te hard', 'Blauwe plekken'],
     modaliteiten: {
@@ -54,6 +58,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'ars',
     causa: ['Voedselvergiftiging', 'Bedorven voedsel/water', 'Koude dranken/ijsjes', 'Angst/ongerustheid'],
+    centrumPathologie: ['Slijmvliezen', 'Spijsvertering', 'Huid', 'Bloed'],
     pijnSensatie: ['Brandend (maar beter van warmte)', 'Stekend'],
     opvallendheden: ['Extreme onrust (fysiek + mentaal)', 'Angst voor de dood', 'Dorst kleine slokjes', 'Smetvrees, ordelijk', 'Uitputting bij onrust'],
     modaliteiten: {
@@ -66,6 +71,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'bell',
     causa: ['Afkoeling hoofd', 'Zon/hitte', 'Nat haar/hoofd', 'Tandjes krijgen'],
+    centrumPathologie: ['Zenuwstelsel', 'Vaatstelsel', 'Klieren'],
     pijnSensatie: ['Kloppend/bonzend', 'Schietend', 'Komt en gaat plotseling'],
     opvallendheden: ['Rood, heet, gezwollen', 'Wijde pupillen', 'Delirium bij koorts', 'Hoge koorts met zweten', 'Overgevoelig voor licht/geluid/aanraking'],
     modaliteiten: {
@@ -78,6 +84,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'bry',
     causa: ['Afkoeling bij warm weer', 'Boosheid/irritatie', 'Onderdrukking van uitslag', 'Financiële zorgen'],
+    centrumPathologie: ['Sereuze vliezen (pleura, peritoneum)', 'Gewrichten', 'Slijmvliezen'],
     pijnSensatie: ['Stekend', 'Scheurend', 'Erger bij minste beweging'],
     opvallendheden: ['Wil absoluut stil liggen', 'Geïrriteerd, wil met rust gelaten worden', 'Droge slijmvliezen', 'Grote dorst (grote slokken, koud water)', 'Praat over zaken/werk bij koorts'],
     modaliteiten: {
@@ -90,6 +97,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'calc',
     causa: ['Overbelasting (mentaal/fysiek)', 'Koud-nat weer', 'Angst'],
+    centrumPathologie: ['Skelet', 'Klieren', 'Spijsvertering'],
     pijnSensatie: ['Krampend', 'Snijdend'],
     opvallendheden: ['Kouwelijk maar zweet makkelijk (vooral hoofd)', 'Traag metabolisme', 'Angst voor ziekte/dood', 'Verlangt naar eieren', 'Zure afscheidingen/zweet'],
     modaliteiten: {
@@ -102,6 +110,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'calen',
     causa: ['Wonden (open, gescheurd)', 'Chirurgie', 'Snijwonden'],
+    centrumPathologie: ['Huid', 'Wonden', 'Slijmvliezen'],
     pijnSensatie: ['Rauwe, schrijnende pijn', 'Buitenproportioneel pijnlijk'],
     opvallendheden: ['Bevordert wondgenezing', 'Voorkomt infectie', 'Anti-septisch', 'Vooral open wonden'],
     modaliteiten: {
@@ -114,6 +123,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'canth',
     causa: ['Infectie (urinewegen)', 'Brandwonden', 'Insectenbeten'],
+    centrumPathologie: ['Urinewegen', 'Slijmvliezen', 'Huid'],
     pijnSensatie: ['Hevig brandend', 'Snijdend', 'Onverdraaglijk'],
     opvallendheden: ['Constante aandrang om te plassen', 'Druppelsgewijs plassen met brandende pijn', 'Onrust door pijn', 'Dorstig maar afkeer van water'],
     modaliteiten: {
@@ -126,6 +136,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'cham',
     causa: ['Woede/driftbui', 'Tandjes krijgen', 'Koffie', 'Koude wind'],
+    centrumPathologie: ['Zenuwstelsel (sensorisch)', 'Spijsvertering'],
     pijnSensatie: ['Onverdraaglijk (buiten proportie)', 'Verdovend'],
     opvallendheden: ['Extreem prikkelbaar en ongeduldig', 'Kind wil gedragen worden', 'Eén wang rood, één bleek', 'Groene diarree', 'Overgevoelig voor pijn'],
     modaliteiten: {
@@ -138,6 +149,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'chin',
     causa: ['Vochtverlies (bloed, diarree, zweet)', 'Malaria', 'Uitputting'],
+    centrumPathologie: ['Bloed', 'Lever', 'Milt', 'Spijsvertering'],
     pijnSensatie: ['Barstend', 'Kloppend'],
     opvallendheden: ['Zwakte na vochtverlies', 'Periodieke klachten', 'Opgeblazen buik (flatulentie helpt niet)', 'Overgevoelig voor aanraking', 'Bleek gezicht'],
     modaliteiten: {
@@ -150,6 +162,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'coloc',
     causa: ['Woede/verontwaardiging', 'Boosheid met ingehouden emotie', 'Kou (afkoeling)'],
+    centrumPathologie: ['Zenuwen (plexus solaris)', 'Spijsvertering'],
     pijnSensatie: ['Hevig krampend/snijdend', 'Samenbindend', 'Golvend (komt en gaat)'],
     opvallendheden: ['Dubbelvouwen van de pijn', 'Onrust door pijn', 'Woede als trigger'],
     modaliteiten: {
@@ -162,6 +175,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'dros',
     causa: ['Verkoudheid', 'Kinkhoest', 'Na mazelen'],
+    centrumPathologie: ['Luchtwegen (larynx, bronchi)'],
     pijnSensatie: ['Kriebel diep in keel/borst', 'Beklemming'],
     opvallendheden: ['Hoest zo hevig → kokhalzen/braken', 'Blaffende hoest', 'Aanvallen van hoest snel na elkaar'],
     modaliteiten: {
@@ -174,6 +188,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'dulc',
     causa: ['Koud-nat weer', 'Nat worden', 'Zitten op koude grond', 'Herfst/najaarsklachten'],
+    centrumPathologie: ['Slijmvliezen', 'Huid', 'Gewrichten', 'Nieren'],
     pijnSensatie: ['Stijf', 'Pijnlijk', 'Schietend'],
     opvallendheden: ['Klachten beginnen altijd bij koud-nat weer', 'Dikke gele afscheiding', 'Huidklachten bij koude'],
     modaliteiten: {
@@ -186,6 +201,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'eup-per',
     causa: ['Griep', 'Malaria', 'Koude/vochtige omgeving'],
+    centrumPathologie: ['Skelet (botten, periosteum)', 'Spijsvertering'],
     pijnSensatie: ['Diep zeurend in botten', 'Alsof botten breken', 'Kneuzig gevoel'],
     opvallendheden: ['Intense botpijn', 'Rillerigheid', 'Dorst naar koude dranken', 'Braakt na drinken als het warm wordt in de maag'],
     modaliteiten: {
@@ -198,6 +214,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'ferr-p',
     causa: ['Begin verkoudheid/ontsteking', 'Geleidelijk begin (niet zo plotseling als Acon)'],
+    centrumPathologie: ['Bloedvaten', 'Slijmvliezen', 'Luchtwegen'],
     pijnSensatie: ['Kloppend', 'Pijnlijk', 'Gecongesteerd gevoel'],
     opvallendheden: ['Eerste stadium ontsteking (vóór pus)', 'Matige koorts', 'Blozen, afwisselend bleek', 'Weinig duidelijke symptomen ("weet niet wat het is")'],
     modaliteiten: {
@@ -210,6 +227,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'gels',
     causa: ['Opkomende griep', 'Anticipatie-angst', 'Schrik', 'Slecht nieuws', 'Warm-vochtig weer'],
+    centrumPathologie: ['Zenuwstelsel', 'Spieren', 'Slijmvliezen'],
     pijnSensatie: ['Loom, zwaar, dof', 'Band om hoofd gevoel', 'Trillerig'],
     opvallendheden: ['Extreme lamheid/loomheid', 'Zware oogleden (kan ogen niet openhouden)', 'Geen dorst', 'Trillen van zwakte', 'Afwezigheid van angst (gelaten)'],
     modaliteiten: {
@@ -222,6 +240,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'hep',
     causa: ['Koude (droge) wind', 'Mercurius-misbruik', 'Onderdrukking van afscheidingen'],
+    centrumPathologie: ['Klieren', 'Huid', 'Slijmvliezen', 'Luchtwegen'],
     pijnSensatie: ['Splintergevoel', 'Alsof er een visgraat in de keel zit', 'Stekend'],
     opvallendheden: ['Extreem kouwelijk', 'Extreem prikkelbaar', 'Dik geel pus', 'Overgevoelig voor pijn, kou, aanraking', 'Stinkende afscheidingen'],
     modaliteiten: {
@@ -234,6 +253,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'hyper',
     causa: ['Zenuwletsel', 'Verwonding van zenuwrijk weefsel', 'Prikwonden', 'Na operatie (zenuwpijn)'],
+    centrumPathologie: ['Zenuwen (zenuwuiteinden)', 'Ruggenmerg'],
     pijnSensatie: ['Schietend langs zenuwbanen', 'Stekend', 'Extreem pijnlijk (buiten proportie)'],
     opvallendheden: ['Pijn schiet naar boven langs zenuwbaan', 'Zenuwrijk gebied', 'Vingertoppen, tenen, stuitje, tanden'],
     modaliteiten: {
@@ -246,6 +266,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'ign',
     causa: ['Verdriet/rouw', 'Teleurstelling', 'Liefdesverdriet', 'Gescheiden worden', 'Onderdrukte emoties'],
+    centrumPathologie: ['Zenuwstelsel (emotioneel)', 'Spijsvertering'],
     pijnSensatie: ['Brok in keel', 'Samentrekkend', 'Paradoxale sensaties'],
     opvallendheden: ['Stille tranen, onderdrukt verdriet', 'Tegenstrijdige symptomen', 'Diepe zuchten', 'Brok in de keel', 'Hypersensitief'],
     modaliteiten: {
@@ -258,6 +279,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'ip',
     causa: ['Voedselvergiftiging', 'Overeten', 'Warmte/vochtigheid'],
+    centrumPathologie: ['Slijmvliezen (luchtwegen, maag)', 'Nervus vagus'],
     pijnSensatie: ['Constante misselijkheid', 'Verkrampend', 'Snijdend (buik)'],
     opvallendheden: ['Aanhoudende misselijkheid bij ALLE klachten', 'Schone tong ondanks misselijkheid', 'Braken verlicht niet', 'Helder rood bloed bij bloeding'],
     modaliteiten: {
@@ -270,6 +292,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'kali-bi',
     causa: ['Koude', 'Bier drinken', 'Nat weer'],
+    centrumPathologie: ['Slijmvliezen (neus, sinussen, keel)', 'Gewrichten'],
     pijnSensatie: ['Kleine vlekjes pijn (wijst met één vinger)', 'Stekend', 'Borend'],
     opvallendheden: ['Taai, dradentrekkend slijm (geel-groen)', 'Pijn op kleine stippen', 'Afscheidingen: dik, taai, dradig', 'Ulceratie van slijmvliezen'],
     modaliteiten: {
@@ -282,6 +305,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'lach',
     causa: ['Onderdrukking van afscheiding', 'Klimacterium', 'Jaloezie', 'Zon/warmte'],
+    centrumPathologie: ['Bloed', 'Keel', 'Zenuwstelsel', 'Linkerzijde'],
     pijnSensatie: ['Beklemmend', 'Samensnoerend', 'Kloppend'],
     opvallendheden: ['Linkerkant', 'Kan niets strak om nek/taille verdragen', 'Praatziek', 'Blauwe/purpere verkleuring', 'Verdraagt geen druk op keel'],
     modaliteiten: {
@@ -294,6 +318,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'led',
     causa: ['Punctiewonden', 'Insectenbeten', 'Stootwonden', 'Gewrichtsverzwikking'],
+    centrumPathologie: ['Gewrichten', 'Bindweefsel', 'Huid'],
     pijnSensatie: ['Koud gevoel in gewricht', 'Stekend', 'Pijnlijk bij beweging'],
     opvallendheden: ['Wond voelt koud aan', 'Koud maar wil geen warmte', 'Blauwe plek die niet geneest', 'Zwelling koud en bleek'],
     modaliteiten: {
@@ -306,6 +331,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'lyc',
     causa: ['Anticipatie-angst', 'Overwerk', 'Onregelmatig eten'],
+    centrumPathologie: ['Lever', 'Spijsvertering', 'Urinewegen'],
     pijnSensatie: ['Opgeblazen gevoel', 'Zeurend', 'Barstend'],
     opvallendheden: ['Rechterkant (of rechts → links)', 'Opgeblazen buik na weinig eten', 'Verlangt naar zoet', '16-20 uur verergering', 'Onzeker maar dictatoriaal thuis'],
     modaliteiten: {
@@ -318,6 +344,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'mag-p',
     causa: ['Koude', 'Staan in koud water', 'Emotionele opwinding'],
+    centrumPathologie: ['Zenuwen', 'Spieren (kramp)'],
     pijnSensatie: ['Hevig krampend', 'Schietend', 'Bliksemend', 'Neuralgisch'],
     opvallendheden: ['Krampen beter van warmte + druk', 'Rechterkant', 'Koliekpijnen', 'Plotseling begin en einde van krampen'],
     modaliteiten: {
@@ -330,6 +357,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'merc',
     causa: ['Weerswisseling', 'Nacht', 'Kou en warmte beiden slecht'],
+    centrumPathologie: ['Klieren (lymfe, speeksel, slijm)', 'Slijmvliezen', 'Botten'],
     pijnSensatie: ['Brandend', 'Stekend', 'Rauw', 'Knagend/borend (bot)'],
     opvallendheden: ['Stinkende adem/zweet/ontlasting', 'Overmatig speeksel', 'Metalige smaak', 'Tandafdrukken op tong', 'Geel-groene afscheidingen', 'Trillen'],
     modaliteiten: {
@@ -342,6 +370,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'nat-m',
     causa: ['Verdriet (onderdrukt)', 'Teleurstelling in liefde', 'Rouw (langdurig)', 'Zon/hitte'],
+    centrumPathologie: ['Slijmvliezen', 'Bloed', 'Huid', 'Emoties'],
     pijnSensatie: ['Kloppend', 'Barstend (hoofdpijn)', 'Tintelend'],
     opvallendheden: ['Wil niet getroost worden', 'Huilt alleen als alleen', 'Verlangt naar zout', 'Droge gebarsten lippen', 'Migraine', 'Recidiverende herpes labialis'],
     modaliteiten: {
@@ -354,6 +383,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'nux-v',
     causa: ['Overmatig (eten, drinken, medicijnen)', 'Stress/overwerk', 'Koude', 'Koffie/alcohol', 'Woede'],
+    centrumPathologie: ['Spijsvertering', 'Zenuwstelsel', 'Lever'],
     pijnSensatie: ['Krampend', 'Persend', 'Zeurend'],
     opvallendheden: ['Prikkelbaar, ongeduldig, competitief', 'Ochtendmisselijkheid', 'Verstopping met loze aandrang', 'Kouwelijk', 'Overgevoelig voor prikkels (geluid, licht, geur)'],
     modaliteiten: {
@@ -366,6 +396,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'phos',
     causa: ['Koude (ijsdranken)', 'Bliksem/onweer', 'Narcose', 'Voedselvergiftiging'],
+    centrumPathologie: ['Bloed', 'Lever', 'Zenuwen', 'Longen'],
     pijnSensatie: ['Brandend (maag, handpalmen)', 'Beklemming borst'],
     opvallendheden: ['Verlangt naar ijswater (braakt als het warm wordt in maag)', 'Angst voor onweer', 'Open, sympathiek, wil gezelschap', 'Bloedingsneiging (helder rood)', 'Dorstig op koud water'],
     modaliteiten: {
@@ -378,6 +409,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'phyt',
     causa: ['Koude', 'Nat weer', 'Borstvoeding'],
+    centrumPathologie: ['Klieren (borst, lymfe)', 'Botten', 'Keel'],
     pijnSensatie: ['Stijf, pijnlijk', 'Schietend naar oor bij slikken', 'Alsof keel een bal is'],
     opvallendheden: ['Donkerrode keel', 'Pijn schiet naar oren bij slikken', 'Klierenzwelling', 'Borsten hard en pijnlijk'],
     modaliteiten: {
@@ -390,6 +422,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'puls',
     causa: ['Vet/rijk eten', 'Warm weer', 'Natte voeten', 'Puberteit', 'Hormonale veranderingen'],
+    centrumPathologie: ['Slijmvliezen', 'Veneuze circulatie', 'Spijsvertering'],
     pijnSensatie: ['Wisselend van plaats', 'Trekkend', 'Scheurend'],
     opvallendheden: ['Huilerig, wil troost', 'Dorstloos', 'Afscheiding: dik, geel-groen, mild', 'Klachten veranderen steeds', 'Beter van open lucht', 'Zacht, meegaand karakter'],
     modaliteiten: {
@@ -402,6 +435,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'rhus-t',
     causa: ['Overbelasting/verrekking', 'Koud-nat worden', 'Nat/koud weer', 'Tillen'],
+    centrumPathologie: ['Bindweefsel', 'Gewrichten', 'Huid'],
     pijnSensatie: ['Stijf bij begin bewegen', 'Scheurend', 'Alsof pezen te kort zijn'],
     opvallendheden: ['Extreme onrust — moet blijven bewegen', 'Stijf bij begin, soepeler door bewegen', 'Blaasjes op de huid (herpes)', 'Driehoekig rode neusbrug'],
     modaliteiten: {
@@ -414,6 +448,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'ruta',
     causa: ['Overbelasting pezen/banden', 'Oogvermoeidheid', 'Val op knie/elleboog', 'Botkneuzing'],
+    centrumPathologie: ['Periosteum', 'Pezen', 'Ogen', 'Gewrichten'],
     pijnSensatie: ['Gekneusd gevoel (botten/pezen)', 'Zeurend', 'Stijf', 'Lam gevoel'],
     opvallendheden: ['Pezen/ligamenten/periost', 'Ogen vermoeid door lezen/fijn werk', 'Knikkende knieën'],
     modaliteiten: {
@@ -426,6 +461,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'sep',
     causa: ['Hormonale veranderingen', 'Overwerk (fysiek)', 'Zwangerschap/postpartum', 'De pil'],
+    centrumPathologie: ['Veneuze circulatie', 'Uterus', 'Huid'],
     pijnSensatie: ['Uitzakkend/drukkend naar beneden', 'Trekkend'],
     opvallendheden: ['Indifferent tegenover geliefden', 'Uitgeput en prikkelbaar', 'Gele vlekken in gezicht', 'Verlangt naar azijn/zuur', 'Beter van stevige inspanning (dansen)'],
     modaliteiten: {
@@ -438,6 +474,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'sil',
     causa: ['Vaccinatie', 'Onderdrukking van zweet', 'Koude', 'Voetenzweet onderdrukt'],
+    centrumPathologie: ['Bindweefsel', 'Botten', 'Huid', 'Klieren'],
     pijnSensatie: ['Stekend', 'Splintergevoel', 'Kloppend (abces)'],
     opvallendheden: ['Stinkend voetenzweet', 'Splinters/vreemde voorwerpen komen eruit', 'Traag genezend', 'Kouwelijk, tenger, verlegen', 'Hoofdzweet (nacht)'],
     modaliteiten: {
@@ -450,6 +487,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'spong',
     causa: ['Koude droge wind', 'Opwinding/angst', 'Schildklierklachten'],
+    centrumPathologie: ['Luchtwegen (larynx)', 'Schildklier', 'Hart'],
     pijnSensatie: ['Droog gevoel in keel/luchtwegen', 'Branderig', 'Zaaggevoel'],
     opvallendheden: ['Droge blaffende/zagende hoest', 'Alsof je door een spons ademt', 'Angst bij ademhalingsklachten', 'Schildklierzwelling'],
     modaliteiten: {
@@ -462,6 +500,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'staph',
     causa: ['Onderdrukte woede/verontwaardiging', 'Vernederd worden', 'Na chirurgie (snijwonden)', 'Seksueel misbruik'],
+    centrumPathologie: ['Urogenitaal', 'Zenuwen', 'Huid'],
     pijnSensatie: ['Snijdend (alsof met mes)', 'Stekend', 'Brandend'],
     opvallendheden: ['Ingehouden woede', 'Trillen van woede', '"Ik slik het maar in"', 'Buikpijn na boosheid', 'Gevoelig voor snijwonden/chirurgie'],
     modaliteiten: {
@@ -474,6 +513,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'sulph',
     causa: ['Onderdrukking van uitslag/afscheiding', 'Was-allergie', 'Warmte'],
+    centrumPathologie: ['Huid', 'Portaalveneuze circulatie', 'Slijmvliezen'],
     pijnSensatie: ['Brandend', 'Jeukend', 'Stekend'],
     opvallendheden: ['Brandend: voetzolen, kruin, anus, huid', 'Steekt voeten buiten bed', 'Filosofisch/rommelig type', 'Honger om 11u', 'Afkeer van wassen/baden', 'Stinkende afscheidingen'],
     modaliteiten: {
@@ -486,6 +526,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'symph',
     causa: ['Botbreuk', 'Botkneuzing', 'Oogletsel (stomp)'],
+    centrumPathologie: ['Botten (botbreukgenezing)', 'Periosteum'],
     pijnSensatie: ['Prikkend op breukplaats', 'Stekend', 'Zeurend in bot'],
     opvallendheden: ['Bevordert botgroei/callusvorming', '"Knitbone"', 'Specifiek voor botletsel', 'Na Arnica in acute fase'],
     modaliteiten: {
@@ -498,6 +539,7 @@ const remedyProfiles: RemedyProfile[] = [
   {
     abbr: 'verat',
     causa: ['Voedselvergiftiging', 'Angst/schrik', 'Koud drinken', 'Na operatie', 'Uitputting'],
+    centrumPathologie: ['Spijsvertering', 'Circulatie', 'Zenuwen'],
     pijnSensatie: ['IJskoude pijn', 'Snijdend/krampend (buik)', 'Koude sensatie'],
     opvallendheden: ['IJskoud zweet op voorhoofd', 'Kollapsneiging', 'Gelijktijdig braken + diarree', 'Dorst op koud water (braakt het meteen uit)', 'Blauw/koud/uitgeput'],
     modaliteiten: {

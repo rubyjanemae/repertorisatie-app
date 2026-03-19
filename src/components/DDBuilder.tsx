@@ -23,10 +23,11 @@ function generateId() {
 function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
   const profile = lookupRemedyProfile(abbr);
   if (!profile) {
-    return { causa: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
+    return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
   }
   return {
     causa: profile.causa.join('. '),
+    cp: profile.centrumPathologie.join(', '),
     mind: profile.opvallendheden.join('. '),
     pijnSensatie: profile.pijnSensatie.join('. '),
     uitscheiding: '',  // niet in profiel, handmatig invullen
@@ -37,7 +38,7 @@ function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
 }
 
 function createEmptyCells(): Record<DDCategory, string> {
-  return { causa: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
+  return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
 }
 
 // ─── Middel zoeker ──────────────────────────────────────────
