@@ -273,8 +273,8 @@ function DDCard({
                 <tbody>
                   {DD_CATEGORIES.map(cat => (
                     <tr key={cat.key} className="border-t border-warm-border-subtle/50">
-                      <td className={`py-2 px-2 align-top sticky left-0 bg-warm-white z-10 ${
-                        cat.key === 'modErger' ? 'text-danger/70' : cat.key === 'modBeter' ? 'text-forest' : 'text-warm-text-secondary'
+                      <td className={`py-2 px-2 align-top sticky left-0 z-10 ${
+                        cat.key === 'modErger' ? 'text-red-600 font-bold bg-red-50/50' : cat.key === 'modBeter' ? 'text-emerald-600 font-bold bg-emerald-50/50' : 'text-warm-text-secondary bg-warm-white'
                       }`}>
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs">{cat.icon}</span>
@@ -290,9 +290,9 @@ function DDCard({
                             rows={2}
                             className={`w-full text-xs font-body rounded-md border resize-y p-2 transition-colors focus:outline-none focus:ring-1 ${
                               cat.key === 'modErger'
-                                ? 'border-danger/15 bg-danger/[0.03] focus:border-danger/30 focus:ring-danger/20 text-warm-text'
+                                ? 'border-red-300 bg-red-100 focus:border-red-500 focus:ring-red-400/30 text-red-800 font-medium'
                                 : cat.key === 'modBeter'
-                                ? 'border-forest/15 bg-forest-light/30 focus:border-forest/30 focus:ring-forest/20 text-warm-text'
+                                ? 'border-emerald-300 bg-emerald-100 focus:border-emerald-500 focus:ring-emerald-400/30 text-emerald-800 font-medium'
                                 : 'border-warm-border-subtle bg-parchment/30 focus:border-forest/30 focus:ring-forest/20 text-warm-text'
                             }`}
                           />
