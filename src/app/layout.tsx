@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, DM_Serif_Display, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default function RootLayout({
         className={`${inter.variable} ${dmSerif.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <ErrorBoundary>{children}</ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   );
