@@ -41,7 +41,7 @@ function createEmptyCells(): Record<DDCategory, string> {
   return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
 }
 
-// ─── Middel zoeker ──────────────────────────────────────────
+// ─── Middel zoeker (met vrije invoer) ────────────────────────
 function RemedySearch({ onSelect, existingAbbrs }: { onSelect: (info: RemedyInfo) => void; existingAbbrs: string[] }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RemedyInfo[]>([]);
@@ -52,7 +52,7 @@ function RemedySearch({ onSelect, existingAbbrs }: { onSelect: (info: RemedyInfo
     if (query.trim().length < 1) { setResults([]); setShow(false); return; }
     const r = searchRemedies(query).filter(rem => !existingAbbrs.includes(rem.abbr));
     setResults(r.slice(0, 12));
-    setShow(r.length > 0);
+    setShow(true);
   }, [query, existingAbbrs]);
 
   useEffect(() => {
@@ -63,17 +63,44 @@ function RemedySearch({ onSelect, existingAbbrs }: { onSelect: (info: RemedyInfo
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Vrije invoer: voeg als custom middel toe
+  const addCustomRemedy = () => {
+    const abbr = query.trim().toLowerCase();
+    if (!abbr || existingAbbrs.includes(abbr)) return;
+    // Kijk of het middel in de database staat
+    const known = lookupRemedy(abbr);
+    onSelect({
+      abbr: known?.abbr || abbr,
+      fullName: known?.fullName || abbr.charAt(0).toUpperCase() + abbr.slice(1),
+    });
+    setQuery('');
+    setShow(false);
+  };
+
   return (
     <div className="relative" ref={ref}>
       <input
         type="text"
         value={query}
         onChange={e => setQuery(e.target.value)}
-        placeholder="Middel toevoegen..."
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (results.length > 0) {
+              // Selecteer eerste resultaat
+              onSelect(results[0]);
+              setQuery('');
+              setShow(false);
+            } else if (query.trim()) {
+              addCustomRemedy();
+            }
+          }
+        }}
+        placeholder="Middel zoeken of typen..."
         className="input-materia w-full text-sm"
-        onFocus={() => results.length > 0 && setShow(true)}
+        onFocus={() => query.trim().length >= 1 && setShow(true)}
       />
-      {show && (
+      {show && query.trim().length >= 1 && (
         <div className="absolute z-30 w-full mt-1 card-materia overflow-hidden animate-fade-in">
           <div className="max-h-48 overflow-y-auto">
             {results.map((r, i) => (
@@ -92,6 +119,29 @@ function RemedySearch({ onSelect, existingAbbrs }: { onSelect: (info: RemedyInfo
                 <span className="text-warm-text-secondary italic">{r.fullName}</span>
               </button>
             ))}
+            {/* Vrije invoer optie als het middel niet gevonden wordt */}
+            {results.length === 0 && (
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={addCustomRemedy}
+                className="w-full text-left px-3 py-2.5 hover:bg-sienna-light/30 transition-colors text-sm font-body flex items-center gap-2 border-t border-warm-border-subtle/50"
+              >
+                <span className="text-sienna font-semibold">+</span>
+                <span className="font-bold text-sienna font-mono">{query.trim().toLowerCase()}</span>
+                <span className="text-warm-text-muted text-xs">— toevoegen als vrij middel</span>
+              </button>
+            )}
+            {results.length > 0 && !results.find(r => r.abbr === query.trim().toLowerCase()) && query.trim().length >= 2 && (
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={addCustomRemedy}
+                className="w-full text-left px-3 py-2 hover:bg-sienna-light/20 transition-colors text-xs font-body flex items-center gap-2 border-t border-warm-border-subtle/50 text-warm-text-muted"
+              >
+                <span className="text-sienna">+</span>
+                <span className="font-mono">{query.trim().toLowerCase()}</span>
+                <span>— of voeg toe als vrij middel</span>
+              </button>
+            )}
           </div>
         </div>
       )}
