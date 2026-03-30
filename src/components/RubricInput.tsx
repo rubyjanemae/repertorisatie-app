@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { SavedRubric } from '@/lib/types';
 import { parseRemedies, mergeRemedyStrings, gradeBgColor, gradeToDisplay, MergeResult } from '@/lib/parseRemedies';
 import { searchRubrics, lookupRemediesDirect, RubricSearchResult } from '@/lib/repertoryLookup';
+import { fetchSharedRubrics } from '@/lib/sharedRubrics';
 import SharedRubricLibrary from './SharedRubricLibrary';
 import { isSupabaseAvailable } from '@/lib/supabase';
 
@@ -87,8 +88,9 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
   const [lastAddedRubric, setLastAddedRubric] = useState<{ name: string; remedyString: string } | null>(null);
   const [shareStatus, setShareStatus] = useState<'idle' | 'sharing' | 'shared' | 'error'>('idle');
 
-  // Autocomplete suggesties
-  const [suggestions, setSuggestions] = useState<RubricSearchResult[]>([]);
+  // Autocomplete suggesties (OOREP + Community)
+  type SuggestionItem = RubricSearchResult & { source?: 'oorep' | 'community'; communityRemedyString?: string };
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -122,9 +124,32 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
 
     const timer = setTimeout(async () => {
       try {
-        const results = await searchRubrics(name, 10);
-        setSuggestions(results);
-        setShowSuggestions(results.length > 0);
+        // Zoek parallel in OOREP én community (Supabase)
+        const [oorepResults, communityResults] = await Promise.all([
+          searchRubrics(name, 10),
+          fetchSharedRubrics(name).catch(() => []),
+        ]);
+
+        // OOREP resultaten met source label
+        const oorep: SuggestionItem[] = oorepResults.map(r => ({ ...r, source: 'oorep' as const }));
+
+        // Community resultaten omzetten naar hetzelfde formaat
+        // Filter duplicaten die al in OOREP staan
+        const oorepNames = new Set(oorepResults.map(r => r.displayPath.toLowerCase()));
+        const community: SuggestionItem[] = communityResults
+          .filter(r => !oorepNames.has(r.name.toLowerCase()))
+          .slice(0, 5)
+          .map(r => ({
+            oorepPath: r.name,
+            displayPath: r.name,
+            chapterFile: '',
+            source: 'community' as const,
+            communityRemedyString: r.remedy_string,
+          }));
+
+        const combined = [...oorep, ...community];
+        setSuggestions(combined);
+        setShowSuggestions(combined.length > 0);
         setHighlightedIndex(-1);
       } catch {
         setSuggestions([]);
@@ -137,14 +162,20 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
   }, [name]);
 
   // Klik of Enter op een autocomplete suggestie
-  const handleSuggestionClick = useCallback(async (suggestion: RubricSearchResult) => {
+  const handleSuggestionClick = useCallback(async (suggestion: SuggestionItem) => {
     suppressSuggestionsRef.current = true;
     setName(suggestion.displayPath);
     setShowSuggestions(false);
     setSuggestions([]);
     setHighlightedIndex(-1);
 
-    // Laad de middelen voor deze rubriek
+    // Community rubriek: remedyString zit al in het resultaat
+    if (suggestion.source === 'community' && suggestion.communityRemedyString) {
+      fillFromRemedyString(suggestion.communityRemedyString);
+      return;
+    }
+
+    // OOREP rubriek: laad de middelen via lookup
     setIsLoadingSuggestion(true);
     try {
       const remedyString = await lookupRemediesDirect(suggestion.oorepPath, suggestion.chapterFile);
@@ -367,56 +398,111 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
           />
 
           {/* Autocomplete suggesties dropdown */}
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in" role="listbox">
-              <div className="px-3 py-1.5 bg-forest-light/50 border-b border-forest/10 flex items-center justify-between">
-                <span className="text-[10px] text-forest font-body font-semibold uppercase tracking-wider">Repertorium Publicum</span>
-                <span className="text-[10px] text-warm-text-muted font-body">
-                  {suggestions.length} resultaten
-                  <span className="text-warm-text-muted/50 ml-1">· ↑↓ navigeer · Enter selecteer</span>
-                </span>
-              </div>
-              <div className="max-h-72 overflow-y-auto" ref={suggestionsRef}>
-                {suggestions.map((s, i) => {
-                  // Markeer de eerste " - " als scheidslijn tussen hoofdstuk en subrubriek
-                  const dashIdx = s.displayPath.indexOf(' - ');
-                  const chapter = dashIdx > -1 ? s.displayPath.slice(0, dashIdx) : s.displayPath;
-                  const rest = dashIdx > -1 ? s.displayPath.slice(dashIdx) : '';
-                  const isHighlighted = i === highlightedIndex;
+          {showSuggestions && suggestions.length > 0 && (() => {
+            const oorepItems = suggestions.filter(s => s.source !== 'community');
+            const communityItems = suggestions.filter(s => s.source === 'community');
+            let globalIdx = -1;
 
-                  return (
-                    <button
-                      key={i}
-                      id={`suggestion-${i}`}
-                      data-index={i}
-                      role="option"
-                      aria-selected={isHighlighted}
-                      onMouseDown={e => e.preventDefault()}
-                      onMouseEnter={() => setHighlightedIndex(i)}
-                      onClick={() => handleSuggestionClick(s)}
-                      className={`w-full text-left px-3 py-2.5 transition-colors border-b last:border-b-0 border-warm-border-subtle/50 group cursor-pointer ${
-                        isHighlighted
-                          ? 'bg-forest-light/60 ring-1 ring-inset ring-forest/20'
-                          : 'hover:bg-forest-light/30'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-body">
-                          <span className={`font-semibold ${isHighlighted ? 'text-forest-dark' : 'text-forest'}`}>{chapter}</span>
-                          <span className="text-warm-text-secondary">{rest}</span>
-                        </span>
-                        <span className={`ml-auto text-[10px] text-forest shrink-0 font-body transition-opacity ${
-                          isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                        }`}>
-                          invullen ↵
-                        </span>
+            return (
+              <div className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in" role="listbox">
+                <div className="px-3 py-1.5 bg-forest-light/50 border-b border-forest/10 flex items-center justify-between">
+                  <span className="text-[10px] text-forest font-body font-semibold uppercase tracking-wider">
+                    Repertorium{communityItems.length > 0 ? ' + Community' : ' Publicum'}
+                  </span>
+                  <span className="text-[10px] text-warm-text-muted font-body">
+                    {suggestions.length} resultaten
+                    <span className="text-warm-text-muted/50 ml-1">· ↑↓ Enter</span>
+                  </span>
+                </div>
+                <div className="max-h-72 overflow-y-auto" ref={suggestionsRef}>
+                  {/* OOREP resultaten */}
+                  {oorepItems.map((s) => {
+                    globalIdx++;
+                    const i = globalIdx;
+                    const dashIdx = s.displayPath.indexOf(' - ');
+                    const chapter = dashIdx > -1 ? s.displayPath.slice(0, dashIdx) : s.displayPath;
+                    const rest = dashIdx > -1 ? s.displayPath.slice(dashIdx) : '';
+                    const isHighlighted = i === highlightedIndex;
+
+                    return (
+                      <button
+                        key={`oorep-${i}`}
+                        id={`suggestion-${i}`}
+                        data-index={i}
+                        role="option"
+                        aria-selected={isHighlighted}
+                        onMouseDown={e => e.preventDefault()}
+                        onMouseEnter={() => setHighlightedIndex(i)}
+                        onClick={() => handleSuggestionClick(s)}
+                        className={`w-full text-left px-3 py-2.5 transition-colors border-b last:border-b-0 border-warm-border-subtle/50 group cursor-pointer ${
+                          isHighlighted
+                            ? 'bg-forest-light/60 ring-1 ring-inset ring-forest/20'
+                            : 'hover:bg-forest-light/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-body">
+                            <span className={`font-semibold ${isHighlighted ? 'text-forest-dark' : 'text-forest'}`}>{chapter}</span>
+                            <span className="text-warm-text-secondary">{rest}</span>
+                          </span>
+                          <span className={`ml-auto text-[10px] text-forest shrink-0 font-body transition-opacity ${
+                            isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`}>
+                            invullen ↵
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                  {/* Community resultaten */}
+                  {communityItems.length > 0 && (
+                    <>
+                      <div className="px-3 py-1 bg-sienna-light/30 border-b border-sienna/10">
+                        <span className="text-[10px] text-sienna font-body font-semibold uppercase tracking-wider">🌐 Community</span>
                       </div>
-                    </button>
-                  );
-                })}
+                      {communityItems.map((s) => {
+                        globalIdx++;
+                        const i = globalIdx;
+                        const isHighlighted = i === highlightedIndex;
+
+                        return (
+                          <button
+                            key={`community-${i}`}
+                            id={`suggestion-${i}`}
+                            data-index={i}
+                            role="option"
+                            aria-selected={isHighlighted}
+                            onMouseDown={e => e.preventDefault()}
+                            onMouseEnter={() => setHighlightedIndex(i)}
+                            onClick={() => handleSuggestionClick(s)}
+                            className={`w-full text-left px-3 py-2.5 transition-colors border-b last:border-b-0 border-warm-border-subtle/50 group cursor-pointer ${
+                              isHighlighted
+                                ? 'bg-sienna-light/40 ring-1 ring-inset ring-sienna/20'
+                                : 'hover:bg-sienna-light/20'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-body">
+                                <span className={`font-semibold ${isHighlighted ? 'text-sienna' : 'text-warm-text'}`}>
+                                  {s.displayPath}
+                                </span>
+                              </span>
+                              <span className={`ml-auto text-[10px] text-sienna shrink-0 font-body transition-opacity ${
+                                isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                              }`}>
+                                invullen ↵
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Middelen per graad */}

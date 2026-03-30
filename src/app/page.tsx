@@ -151,6 +151,9 @@ export default function Home() {
       updatedAt: Date.now(),
     }));
 
+    // Automatisch delen met community via Supabase (fire-and-forget)
+    shareRubric(name, remedyString, contributorName || 'Anoniem').catch(() => {});
+
     // Sla de rubriek op in de bibliotheek
     setSavedRubrics(prev => {
       const existing = prev.findIndex(r => r.name.toLowerCase() === name.trim().toLowerCase());
