@@ -124,20 +124,57 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
 
     const timer = setTimeout(async () => {
       try {
-        // Zoek parallel in OOREP én community (Supabase)
+        // Zoek parallel in OOREP, community (Supabase), en lokale bibliotheek
         const [oorepResults, communityResults] = await Promise.all([
           searchRubrics(name, 10),
           fetchSharedRubrics(name).catch(() => []),
         ]);
 
-        // OOREP resultaten met source label
-        const oorep: SuggestionItem[] = oorepResults.map(r => ({ ...r, source: 'oorep' as const }));
+        // Lokale bibliotheek doorzoeken
+        const lowerName = name.toLowerCase();
+        const libraryMatches = savedRubrics.filter(r =>
+          r.name.toLowerCase().includes(lowerName)
+        );
 
-        // Community resultaten omzetten naar hetzelfde formaat
-        // Filter duplicaten die al in OOREP staan
-        const oorepNames = new Set(oorepResults.map(r => r.displayPath.toLowerCase()));
-        const community: SuggestionItem[] = communityResults
-          .filter(r => !oorepNames.has(r.name.toLowerCase()))
+        // Community resultaten als lookup map (naam → remedyString)
+        const communityMap = new Map(
+          communityResults.map(r => [r.name.toLowerCase(), r])
+        );
+
+        // Lokale bibliotheek als lookup map
+        const libraryMap = new Map(
+          libraryMatches.map(r => [r.name.toLowerCase(), r])
+        );
+
+        // OOREP resultaten verrijken: als community of bibliotheek een versie heeft, gebruik die
+        const oorep: SuggestionItem[] = oorepResults.map(r => {
+          const displayLower = r.displayPath.toLowerCase();
+          const communityVersion = communityMap.get(displayLower);
+          const libraryVersion = libraryMap.get(displayLower);
+
+          // Bibliotheek heeft voorrang, dan community, dan OOREP
+          if (libraryVersion) {
+            communityMap.delete(displayLower);
+            libraryMap.delete(displayLower);
+            return {
+              ...r,
+              source: 'community' as const,
+              communityRemedyString: libraryVersion.remedyString,
+            };
+          }
+          if (communityVersion) {
+            communityMap.delete(displayLower);
+            return {
+              ...r,
+              source: 'community' as const,
+              communityRemedyString: communityVersion.remedy_string,
+            };
+          }
+          return { ...r, source: 'oorep' as const };
+        });
+
+        // Overgebleven community resultaten die NIET in OOREP staan
+        const extraCommunity: SuggestionItem[] = [...communityMap.values()]
           .slice(0, 5)
           .map(r => ({
             oorepPath: r.name,
@@ -147,7 +184,18 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             communityRemedyString: r.remedy_string,
           }));
 
-        const combined = [...oorep, ...community];
+        // Overgebleven bibliotheek resultaten die NIET in OOREP staan
+        const extraLibrary: SuggestionItem[] = [...libraryMap.values()]
+          .slice(0, 3)
+          .map(r => ({
+            oorepPath: r.name,
+            displayPath: r.name,
+            chapterFile: '',
+            source: 'community' as const,
+            communityRemedyString: r.remedyString,
+          }));
+
+        const combined = [...oorep, ...extraLibrary, ...extraCommunity];
         setSuggestions(combined);
         setShowSuggestions(combined.length > 0);
         setHighlightedIndex(-1);
@@ -159,7 +207,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [name]);
+  }, [name, savedRubrics]);
 
   // Klik of Enter op een autocomplete suggestie
   const handleSuggestionClick = useCallback(async (suggestion: SuggestionItem) => {
