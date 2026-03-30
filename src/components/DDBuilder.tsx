@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   DifferentialDiagnosis,
   DDRemedyData,
+  DDCustomRow,
   DDCategory,
   DD_CATEGORIES,
 } from '@/lib/types';
@@ -23,15 +24,14 @@ function generateId() {
 function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
   const profile = lookupRemedyProfile(abbr);
   if (!profile) {
-    return { causa: '', cp: '', mind: '', pijnSensatie: '', extra: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
+    return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
   }
   return {
     causa: profile.causa.join('. '),
     cp: profile.centrumPathologie.join(', '),
     mind: profile.opvallendheden.join('. '),
     pijnSensatie: profile.pijnSensatie.join('. '),
-    extra: '',  // vrij veld, handmatig invullen
-    uitscheiding: '',  // niet in profiel, handmatig invullen
+    uitscheiding: '',
     modErger: profile.modaliteiten.erger.join(', '),
     modBeter: profile.modaliteiten.beter.join(', '),
     sleutelSx: profile.sleutelSx.join('. '),
@@ -39,7 +39,7 @@ function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
 }
 
 function createEmptyCells(): Record<DDCategory, string> {
-  return { causa: '', cp: '', mind: '', pijnSensatie: '', extra: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
+  return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
 }
 
 // ─── Middel zoeker (met vrije invoer) ────────────────────────
@@ -162,13 +162,14 @@ function DDCard({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [extraExpanded, setExtraExpanded] = useState(false);
   const [exportStatus, setExportStatus] = useState<'idle' | 'copied'>('idle');
   const titleRef = useRef<HTMLInputElement>(null);
 
+  // Zorg dat customRows altijd bestaat (migratie van oude data)
+  const customRows: DDCustomRow[] = dd.customRows || [];
+
   // Export DD als tekst
   const exportAsText = useCallback(() => {
-    const cats = DD_CATEGORIES.filter(c => c.key !== 'extra' || dd.remedies.some(r => r.cells.extra?.trim()));
     const colWidth = 30;
     const labelWidth = 22;
 
@@ -183,8 +184,8 @@ function DDCard({
     text += '\n';
     text += `${'-'.repeat(labelWidth + colWidth * dd.remedies.length)}\n`;
 
-    // Rijen
-    cats.forEach(cat => {
+    // Standaard rijen
+    DD_CATEGORIES.forEach(cat => {
       text += `${(cat.icon + ' ' + cat.label).padEnd(labelWidth)}`;
       dd.remedies.forEach(r => {
         const val = (r.cells[cat.key] || '').replace(/\n/g, '; ');
@@ -193,8 +194,19 @@ function DDCard({
       text += '\n';
     });
 
+    // Custom rijen
+    customRows.forEach(row => {
+      if (!row.label && !dd.remedies.some(r => row.values[r.abbr]?.trim())) return;
+      text += `${'✏️ ' + (row.label || 'Extra').padEnd(labelWidth - 3)}`;
+      dd.remedies.forEach(r => {
+        const val = (row.values[r.abbr] || '').replace(/\n/g, '; ');
+        text += `${val.substring(0, colWidth - 2).padEnd(colWidth)}`;
+      });
+      text += '\n';
+    });
+
     return text;
-  }, [dd]);
+  }, [dd, customRows]);
 
   const handleExportText = useCallback(() => {
     const text = exportAsText();
@@ -253,6 +265,53 @@ function DDCard({
       updatedAt: Date.now(),
     });
   }, [dd, onUpdate]);
+
+  // Custom rij functies
+  const addCustomRow = useCallback(() => {
+    const newRow: DDCustomRow = {
+      id: generateId(),
+      label: '',
+      values: {},
+      collapsed: false,
+    };
+    onUpdate({ ...dd, customRows: [...customRows, newRow], updatedAt: Date.now() });
+  }, [dd, customRows, onUpdate]);
+
+  const updateCustomRowLabel = useCallback((rowId: string, label: string) => {
+    onUpdate({
+      ...dd,
+      customRows: customRows.map(r => r.id === rowId ? { ...r, label } : r),
+      updatedAt: Date.now(),
+    });
+  }, [dd, customRows, onUpdate]);
+
+  const updateCustomRowValue = useCallback((rowId: string, remedyAbbr: string, value: string) => {
+    onUpdate({
+      ...dd,
+      customRows: customRows.map(r =>
+        r.id === rowId ? { ...r, values: { ...r.values, [remedyAbbr]: value } } : r
+      ),
+      updatedAt: Date.now(),
+    });
+  }, [dd, customRows, onUpdate]);
+
+  const toggleCustomRow = useCallback((rowId: string) => {
+    onUpdate({
+      ...dd,
+      customRows: customRows.map(r =>
+        r.id === rowId ? { ...r, collapsed: !r.collapsed } : r
+      ),
+      updatedAt: Date.now(),
+    });
+  }, [dd, customRows, onUpdate]);
+
+  const deleteCustomRow = useCallback((rowId: string) => {
+    onUpdate({
+      ...dd,
+      customRows: customRows.filter(r => r.id !== rowId),
+      updatedAt: Date.now(),
+    });
+  }, [dd, customRows, onUpdate]);
 
   const existingAbbrs = dd.remedies.map(r => r.abbr);
 
@@ -405,82 +464,109 @@ function DDCard({
                   </tr>
                 </thead>
                 <tbody>
-                  {DD_CATEGORIES.map(cat => {
-                    // Extra rij: inklapbaar
-                    if (cat.key === 'extra' && !extraExpanded) {
-                      // Toon alleen een klik-rij om te openen
-                      const hasContent = dd.remedies.some(r => r.cells.extra && r.cells.extra.trim() !== '');
-                      return (
-                        <tr key={cat.key} className="border-t border-warm-border-subtle/30">
-                          <td
-                            colSpan={dd.remedies.length + 1}
-                            className="py-0.5 px-2"
-                          >
-                            <button
-                              onClick={() => setExtraExpanded(true)}
-                              className="flex items-center gap-1.5 text-[10px] text-warm-text-muted/50 hover:text-warm-text-muted transition-colors font-body py-1 group"
-                            >
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform -rotate-90">
-                                <path d="m6 9 6 6 6-6"/>
-                              </svg>
-                              <span>Extra veld</span>
-                              {hasContent && <span className="text-sienna/50">· bevat tekst</span>}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    }
-
-                    return (
-                      <tr key={cat.key} className="border-t border-warm-border-subtle/50">
-                        <td className={`py-2 px-2 align-top sticky left-0 z-10 ${
-                          cat.key === 'modErger' ? 'text-red-600 font-bold bg-red-50/50'
-                          : cat.key === 'modBeter' ? 'text-emerald-600 font-bold bg-emerald-50/50'
-                          : cat.key === 'extra' ? 'text-sienna/70 bg-sienna-light/20'
-                          : 'text-warm-text-secondary bg-warm-white'
-                        }`}>
-                          <div className="flex items-center gap-1.5">
-                            {cat.collapsible ? (
-                              <button
-                                onClick={() => setExtraExpanded(false)}
-                                className="flex items-center gap-1.5 hover:text-sienna transition-colors"
-                                title="Inklappen"
-                              >
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="m6 9 6 6 6-6"/>
-                                </svg>
-                                <span className="text-[11px] font-body font-semibold whitespace-nowrap">{cat.label}</span>
-                              </button>
-                            ) : (
-                              <>
-                                <span className="text-xs">{cat.icon}</span>
-                                <span className="text-[11px] font-body font-semibold whitespace-nowrap">{cat.label}</span>
-                              </>
-                            )}
-                          </div>
+                  {/* Standaard categorieën */}
+                  {DD_CATEGORIES.map(cat => (
+                    <tr key={cat.key} className="border-t border-warm-border-subtle/50">
+                      <td className={`py-2 px-2 align-top sticky left-0 z-10 ${
+                        cat.key === 'modErger' ? 'text-red-600 font-bold bg-red-50/50'
+                        : cat.key === 'modBeter' ? 'text-emerald-600 font-bold bg-emerald-50/50'
+                        : 'text-warm-text-secondary bg-warm-white'
+                      }`}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs">{cat.icon}</span>
+                          <span className="text-[11px] font-body font-semibold whitespace-nowrap">{cat.label}</span>
+                        </div>
+                      </td>
+                      {dd.remedies.map((rem, i) => (
+                        <td key={i} className="py-1.5 px-1.5 align-top">
+                          <textarea
+                            value={rem.cells[cat.key] || ''}
+                            onChange={e => updateCell(i, cat.key, e.target.value)}
+                            placeholder="..."
+                            rows={2}
+                            className={`w-full text-xs font-body rounded-md border resize-y p-2 transition-colors focus:outline-none focus:ring-1 ${
+                              cat.key === 'modErger'
+                                ? 'border-red-300 bg-red-100 focus:border-red-500 focus:ring-red-400/30 text-red-800 font-medium'
+                                : cat.key === 'modBeter'
+                                ? 'border-emerald-300 bg-emerald-100 focus:border-emerald-500 focus:ring-emerald-400/30 text-emerald-800 font-medium'
+                                : 'border-warm-border-subtle bg-parchment/30 focus:border-forest/30 focus:ring-forest/20 text-warm-text'
+                            }`}
+                          />
                         </td>
-                        {dd.remedies.map((rem, i) => (
+                      ))}
+                    </tr>
+                  ))}
+
+                  {/* Custom rijen */}
+                  {customRows.map(row => (
+                    <tr key={row.id} className="border-t border-sienna/15">
+                      <td className="py-1.5 px-2 align-top sticky left-0 z-10 bg-sienna-light/10">
+                        <div className="flex items-center gap-1">
+                          {/* Inklap pijltje */}
+                          <button
+                            onClick={() => toggleCustomRow(row.id)}
+                            className="text-sienna/40 hover:text-sienna transition-colors p-0.5 shrink-0"
+                            title={row.collapsed ? 'Uitklappen' : 'Inklappen'}
+                          >
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                              className={`transition-transform ${row.collapsed ? '-rotate-90' : ''}`}>
+                              <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                          </button>
+                          {/* Bewerkbaar label */}
+                          <input
+                            type="text"
+                            value={row.label}
+                            onChange={e => updateCustomRowLabel(row.id, e.target.value)}
+                            placeholder="Label..."
+                            className="text-[11px] font-body font-semibold text-sienna/70 bg-transparent border-none outline-none w-full min-w-0 placeholder:text-sienna/30"
+                          />
+                          {/* Verwijder knop */}
+                          <button
+                            onClick={() => deleteCustomRow(row.id)}
+                            className="text-sienna/20 hover:text-danger transition-colors p-0.5 shrink-0"
+                            title="Verwijder rij"
+                          >
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                      {!row.collapsed ? (
+                        dd.remedies.map((rem, i) => (
                           <td key={i} className="py-1.5 px-1.5 align-top">
                             <textarea
-                              value={rem.cells[cat.key] || ''}
-                              onChange={e => updateCell(i, cat.key, e.target.value)}
-                              placeholder={cat.key === 'extra' ? 'Vrij invulveld...' : '...'}
+                              value={row.values[rem.abbr] || ''}
+                              onChange={e => updateCustomRowValue(row.id, rem.abbr, e.target.value)}
+                              placeholder="..."
                               rows={2}
-                              className={`w-full text-xs font-body rounded-md border resize-y p-2 transition-colors focus:outline-none focus:ring-1 ${
-                                cat.key === 'modErger'
-                                  ? 'border-red-300 bg-red-100 focus:border-red-500 focus:ring-red-400/30 text-red-800 font-medium'
-                                  : cat.key === 'modBeter'
-                                  ? 'border-emerald-300 bg-emerald-100 focus:border-emerald-500 focus:ring-emerald-400/30 text-emerald-800 font-medium'
-                                  : cat.key === 'extra'
-                                  ? 'border-sienna/20 bg-sienna-light/10 focus:border-sienna/40 focus:ring-sienna/20 text-warm-text italic'
-                                  : 'border-warm-border-subtle bg-parchment/30 focus:border-forest/30 focus:ring-forest/20 text-warm-text'
-                              }`}
+                              className="w-full text-xs font-body rounded-md border border-sienna/15 bg-sienna-light/5 resize-y p-2 transition-colors focus:outline-none focus:ring-1 focus:border-sienna/30 focus:ring-sienna/15 text-warm-text italic"
                             />
                           </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
+                        ))
+                      ) : (
+                        <td colSpan={dd.remedies.length} className="py-1.5 px-2 text-[10px] text-sienna/30 font-body italic">
+                          ingeklapt
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+
+                  {/* + Rij toevoegen knop */}
+                  <tr className="border-t border-warm-border-subtle/30">
+                    <td colSpan={dd.remedies.length + 1} className="py-1.5 px-2">
+                      <button
+                        onClick={addCustomRow}
+                        className="flex items-center gap-1.5 text-[10px] text-sienna/40 hover:text-sienna transition-colors font-body py-0.5 group"
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        <span className="group-hover:underline">Rij toevoegen</span>
+                      </button>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -498,6 +584,7 @@ export default function DDBuilder({ ddList, onUpdate }: DDBuilderProps) {
       id: generateId(),
       title: 'Nieuwe DD',
       remedies: [],
+      customRows: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
