@@ -23,13 +23,14 @@ function generateId() {
 function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
   const profile = lookupRemedyProfile(abbr);
   if (!profile) {
-    return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
+    return { causa: '', cp: '', mind: '', pijnSensatie: '', extra: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
   }
   return {
     causa: profile.causa.join('. '),
     cp: profile.centrumPathologie.join(', '),
     mind: profile.opvallendheden.join('. '),
     pijnSensatie: profile.pijnSensatie.join('. '),
+    extra: '',  // vrij veld, handmatig invullen
     uitscheiding: '',  // niet in profiel, handmatig invullen
     modErger: profile.modaliteiten.erger.join(', '),
     modBeter: profile.modaliteiten.beter.join(', '),
@@ -38,7 +39,7 @@ function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
 }
 
 function createEmptyCells(): Record<DDCategory, string> {
-  return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
+  return { causa: '', cp: '', mind: '', pijnSensatie: '', extra: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
 }
 
 // ─── Middel zoeker (met vrije invoer) ────────────────────────
@@ -161,7 +162,56 @@ function DDCard({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [extraExpanded, setExtraExpanded] = useState(false);
+  const [exportStatus, setExportStatus] = useState<'idle' | 'copied'>('idle');
   const titleRef = useRef<HTMLInputElement>(null);
+
+  // Export DD als tekst
+  const exportAsText = useCallback(() => {
+    const cats = DD_CATEGORIES.filter(c => c.key !== 'extra' || dd.remedies.some(r => r.cells.extra?.trim()));
+    const colWidth = 30;
+    const labelWidth = 22;
+
+    let text = `DIFFERENTIAAL DIAGNOSE: ${dd.title || 'Naamloze DD'}\n`;
+    text += `${'='.repeat(labelWidth + colWidth * dd.remedies.length)}\n`;
+    text += `Datum: ${new Date().toLocaleDateString('nl-NL')}\n`;
+    text += `Middelen: ${dd.remedies.map(r => r.abbr.toUpperCase()).join(', ')}\n\n`;
+
+    // Header
+    text += `${''.padEnd(labelWidth)}`;
+    dd.remedies.forEach(r => { text += `${r.abbr.toUpperCase().padEnd(colWidth)}`; });
+    text += '\n';
+    text += `${'-'.repeat(labelWidth + colWidth * dd.remedies.length)}\n`;
+
+    // Rijen
+    cats.forEach(cat => {
+      text += `${(cat.icon + ' ' + cat.label).padEnd(labelWidth)}`;
+      dd.remedies.forEach(r => {
+        const val = (r.cells[cat.key] || '').replace(/\n/g, '; ');
+        text += `${val.substring(0, colWidth - 2).padEnd(colWidth)}`;
+      });
+      text += '\n';
+    });
+
+    return text;
+  }, [dd]);
+
+  const handleExportText = useCallback(() => {
+    const text = exportAsText();
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DD-${dd.title || 'naamloos'}-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [dd.title, exportAsText]);
+
+  const handleCopyText = useCallback(() => {
+    navigator.clipboard.writeText(exportAsText());
+    setExportStatus('copied');
+    setTimeout(() => setExportStatus('idle'), 2000);
+  }, [exportAsText]);
 
   useEffect(() => {
     if (editingTitle && titleRef.current) titleRef.current.focus();
@@ -249,15 +299,48 @@ function DDCard({
           </span>
         </div>
 
-        <button
-          onClick={onDelete}
-          className="text-cream/30 hover:text-danger transition-colors ml-2 shrink-0"
-          title="Verwijder DD"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-          </svg>
-        </button>
+        <div className="flex items-center gap-1 ml-2 shrink-0">
+          {/* Kopieer naar klembord */}
+          {dd.remedies.length > 0 && (
+            <button
+              onClick={handleCopyText}
+              className={`text-cream/30 hover:text-cream transition-colors p-1 ${exportStatus === 'copied' ? '!text-gold' : ''}`}
+              title={exportStatus === 'copied' ? 'Gekopieerd!' : 'Kopieer als tekst'}
+            >
+              {exportStatus === 'copied' ? (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              ) : (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+              )}
+            </button>
+          )}
+          {/* Download als bestand */}
+          {dd.remedies.length > 0 && (
+            <button
+              onClick={handleExportText}
+              className="text-cream/30 hover:text-cream transition-colors p-1"
+              title="Download als .txt bestand"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+          )}
+          {/* Verwijder DD */}
+          <button
+            onClick={onDelete}
+            className="text-cream/30 hover:text-danger transition-colors p-1"
+            title="Verwijder DD"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Body */}
@@ -322,35 +405,82 @@ function DDCard({
                   </tr>
                 </thead>
                 <tbody>
-                  {DD_CATEGORIES.map(cat => (
-                    <tr key={cat.key} className="border-t border-warm-border-subtle/50">
-                      <td className={`py-2 px-2 align-top sticky left-0 z-10 ${
-                        cat.key === 'modErger' ? 'text-red-600 font-bold bg-red-50/50' : cat.key === 'modBeter' ? 'text-emerald-600 font-bold bg-emerald-50/50' : 'text-warm-text-secondary bg-warm-white'
-                      }`}>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs">{cat.icon}</span>
-                          <span className="text-[11px] font-body font-semibold whitespace-nowrap">{cat.label}</span>
-                        </div>
-                      </td>
-                      {dd.remedies.map((rem, i) => (
-                        <td key={i} className="py-1.5 px-1.5 align-top">
-                          <textarea
-                            value={rem.cells[cat.key]}
-                            onChange={e => updateCell(i, cat.key, e.target.value)}
-                            placeholder="..."
-                            rows={2}
-                            className={`w-full text-xs font-body rounded-md border resize-y p-2 transition-colors focus:outline-none focus:ring-1 ${
-                              cat.key === 'modErger'
-                                ? 'border-red-300 bg-red-100 focus:border-red-500 focus:ring-red-400/30 text-red-800 font-medium'
-                                : cat.key === 'modBeter'
-                                ? 'border-emerald-300 bg-emerald-100 focus:border-emerald-500 focus:ring-emerald-400/30 text-emerald-800 font-medium'
-                                : 'border-warm-border-subtle bg-parchment/30 focus:border-forest/30 focus:ring-forest/20 text-warm-text'
-                            }`}
-                          />
+                  {DD_CATEGORIES.map(cat => {
+                    // Extra rij: inklapbaar
+                    if (cat.key === 'extra' && !extraExpanded) {
+                      // Toon alleen een klik-rij om te openen
+                      const hasContent = dd.remedies.some(r => r.cells.extra && r.cells.extra.trim() !== '');
+                      return (
+                        <tr key={cat.key} className="border-t border-warm-border-subtle/30">
+                          <td
+                            colSpan={dd.remedies.length + 1}
+                            className="py-0.5 px-2"
+                          >
+                            <button
+                              onClick={() => setExtraExpanded(true)}
+                              className="flex items-center gap-1.5 text-[10px] text-warm-text-muted/50 hover:text-warm-text-muted transition-colors font-body py-1 group"
+                            >
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform -rotate-90">
+                                <path d="m6 9 6 6 6-6"/>
+                              </svg>
+                              <span>Extra veld</span>
+                              {hasContent && <span className="text-sienna/50">· bevat tekst</span>}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return (
+                      <tr key={cat.key} className="border-t border-warm-border-subtle/50">
+                        <td className={`py-2 px-2 align-top sticky left-0 z-10 ${
+                          cat.key === 'modErger' ? 'text-red-600 font-bold bg-red-50/50'
+                          : cat.key === 'modBeter' ? 'text-emerald-600 font-bold bg-emerald-50/50'
+                          : cat.key === 'extra' ? 'text-sienna/70 bg-sienna-light/20'
+                          : 'text-warm-text-secondary bg-warm-white'
+                        }`}>
+                          <div className="flex items-center gap-1.5">
+                            {cat.collapsible ? (
+                              <button
+                                onClick={() => setExtraExpanded(false)}
+                                className="flex items-center gap-1.5 hover:text-sienna transition-colors"
+                                title="Inklappen"
+                              >
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="m6 9 6 6 6-6"/>
+                                </svg>
+                                <span className="text-[11px] font-body font-semibold whitespace-nowrap">{cat.label}</span>
+                              </button>
+                            ) : (
+                              <>
+                                <span className="text-xs">{cat.icon}</span>
+                                <span className="text-[11px] font-body font-semibold whitespace-nowrap">{cat.label}</span>
+                              </>
+                            )}
+                          </div>
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+                        {dd.remedies.map((rem, i) => (
+                          <td key={i} className="py-1.5 px-1.5 align-top">
+                            <textarea
+                              value={rem.cells[cat.key] || ''}
+                              onChange={e => updateCell(i, cat.key, e.target.value)}
+                              placeholder={cat.key === 'extra' ? 'Vrij invulveld...' : '...'}
+                              rows={2}
+                              className={`w-full text-xs font-body rounded-md border resize-y p-2 transition-colors focus:outline-none focus:ring-1 ${
+                                cat.key === 'modErger'
+                                  ? 'border-red-300 bg-red-100 focus:border-red-500 focus:ring-red-400/30 text-red-800 font-medium'
+                                  : cat.key === 'modBeter'
+                                  ? 'border-emerald-300 bg-emerald-100 focus:border-emerald-500 focus:ring-emerald-400/30 text-emerald-800 font-medium'
+                                  : cat.key === 'extra'
+                                  ? 'border-sienna/20 bg-sienna-light/10 focus:border-sienna/40 focus:ring-sienna/20 text-warm-text italic'
+                                  : 'border-warm-border-subtle bg-parchment/30 focus:border-forest/30 focus:ring-forest/20 text-warm-text'
+                              }`}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

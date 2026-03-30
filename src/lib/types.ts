@@ -62,13 +62,14 @@ export interface SavedRubric {
 }
 
 // Differentiaal Diagnose
-export type DDCategory = 'causa' | 'cp' | 'mind' | 'pijnSensatie' | 'uitscheiding' | 'modErger' | 'modBeter' | 'sleutelSx';
+export type DDCategory = 'causa' | 'cp' | 'mind' | 'pijnSensatie' | 'extra' | 'uitscheiding' | 'modErger' | 'modBeter' | 'sleutelSx';
 
-export const DD_CATEGORIES: { key: DDCategory; label: string; icon: string }[] = [
+export const DD_CATEGORIES: { key: DDCategory; label: string; icon: string; collapsible?: boolean }[] = [
   { key: 'causa', label: 'Causa', icon: '⚡' },
   { key: 'cp', label: 'Centrum Pathologie', icon: '🎯' },
   { key: 'mind', label: 'Mind', icon: '🧠' },
   { key: 'pijnSensatie', label: 'Pijn / Sensatie', icon: '💢' },
+  { key: 'extra', label: 'Extra', icon: '✏️', collapsible: true },
   { key: 'uitscheiding', label: 'Uitscheiding', icon: '💧' },
   { key: 'modErger', label: 'Mod <', icon: '🔴' },
   { key: 'modBeter', label: 'Mod >', icon: '🟢' },
