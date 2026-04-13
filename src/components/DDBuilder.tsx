@@ -20,6 +20,37 @@ function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** Textarea die automatisch meegroeit met de inhoud */
+function AutoTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const resize = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, []);
+
+  useEffect(() => {
+    // Gebruik requestAnimationFrame zodat de browser layout compleet is
+    const raf = requestAnimationFrame(resize);
+    return () => cancelAnimationFrame(raf);
+  }, [props.value, resize]);
+
+  return (
+    <textarea
+      {...props}
+      ref={ref}
+      rows={undefined}
+      onInput={e => {
+        resize();
+        props.onInput?.(e);
+      }}
+      style={{ ...props.style, minHeight: '3rem', overflow: 'hidden' }}
+    />
+  );
+}
+
 /** Vul cellen automatisch in vanuit een remedyProfile */
 function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
   const profile = lookupRemedyProfile(abbr);
@@ -219,6 +250,41 @@ function DDCard({
     URL.revokeObjectURL(url);
   }, [dd.title, exportAsText]);
 
+  // Export DD als CSV (opent als tabel in Excel/Numbers)
+  const handleExportCsv = useCallback(() => {
+    const esc = (v: string) => `"${v.replace(/"/g, '""').replace(/\n/g, '; ')}"`;
+
+    // Header rij
+    const headers = ['Categorie', ...dd.remedies.map(r => r.abbr.toUpperCase())];
+    const rows: string[][] = [];
+
+    // Standaard categorieën
+    DD_CATEGORIES.forEach(cat => {
+      rows.push([
+        cat.icon + ' ' + cat.label,
+        ...dd.remedies.map(r => r.cells[cat.key] || ''),
+      ]);
+    });
+
+    // Custom rijen
+    customRows.forEach(row => {
+      if (!row.label && !dd.remedies.some(r => row.values[r.abbr]?.trim())) return;
+      rows.push([
+        row.label || 'Extra',
+        ...dd.remedies.map(r => row.values[r.abbr] || ''),
+      ]);
+    });
+
+    const csv = [headers.map(esc).join(';'), ...rows.map(r => r.map(esc).join(';'))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }); // BOM voor Excel
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DD-${dd.title || 'naamloos'}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [dd, customRows]);
+
   const handleCopyText = useCallback(() => {
     navigator.clipboard.writeText(exportAsText());
     setExportStatus('copied');
@@ -377,7 +443,19 @@ function DDCard({
               )}
             </button>
           )}
-          {/* Download als bestand */}
+          {/* Download als CSV tabel */}
+          {dd.remedies.length > 0 && (
+            <button
+              onClick={handleExportCsv}
+              className="text-cream/30 hover:text-cream transition-colors p-1"
+              title="Download als CSV tabel (Excel/Numbers)"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+              </svg>
+            </button>
+          )}
+          {/* Download als tekst */}
           {dd.remedies.length > 0 && (
             <button
               onClick={handleExportText}
@@ -479,11 +557,10 @@ function DDCard({
                       </td>
                       {dd.remedies.map((rem, i) => (
                         <td key={i} className="py-1.5 px-1.5 align-top">
-                          <textarea
+                          <AutoTextarea
                             value={rem.cells[cat.key] || ''}
                             onChange={e => updateCell(i, cat.key, e.target.value)}
                             placeholder="..."
-                            rows={2}
                             className={`w-full text-xs font-body rounded-md border resize-y p-2 transition-colors focus:outline-none focus:ring-1 ${
                               cat.key === 'modErger'
                                 ? 'border-red-300 bg-red-100 focus:border-red-500 focus:ring-red-400/30 text-red-800 font-medium'
@@ -536,11 +613,10 @@ function DDCard({
                       {!row.collapsed ? (
                         dd.remedies.map((rem, i) => (
                           <td key={i} className="py-1.5 px-1.5 align-top">
-                            <textarea
+                            <AutoTextarea
                               value={row.values[rem.abbr] || ''}
                               onChange={e => updateCustomRowValue(row.id, rem.abbr, e.target.value)}
                               placeholder="..."
-                              rows={2}
                               className="w-full text-xs font-body rounded-md border border-sienna/15 bg-sienna-light/5 resize-y p-2 transition-colors focus:outline-none focus:ring-1 focus:border-sienna/30 focus:ring-sienna/15 text-warm-text italic"
                             />
                           </td>
