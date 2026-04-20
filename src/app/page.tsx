@@ -36,6 +36,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarExpandedPaths, setSidebarExpandedPaths] = useState<Set<string>>(new Set());
   const [importedCase, setImportedCase] = useState<Case | null>(null);
+  const [shareToast, setShareToast] = useState<string | null>(null);
 
   // Toon naamprompt als contributor nog niet ingesteld is
   useEffect(() => {
@@ -43,6 +44,13 @@ export default function Home() {
       setShowNamePrompt(true);
     }
   }, [mounted, contributorName]);
+
+  // Share toast: verdwijnt automatisch na 2 sec
+  useEffect(() => {
+    if (!shareToast) return;
+    const t = setTimeout(() => setShareToast(null), 2000);
+    return () => clearTimeout(t);
+  }, [shareToast]);
 
   // Check of er een gedeelde casus in de URL zit
   useEffect(() => {
@@ -149,7 +157,9 @@ export default function Home() {
     }));
 
     // Automatisch delen met community via Supabase (fire-and-forget)
-    shareRubric(name, remedyString, contributorName || 'Anoniem').catch(() => {});
+    shareRubric(name, remedyString, contributorName || 'Anoniem')
+      .then(r => { if (r.success) setShareToast('Gedeeld met community'); })
+      .catch(() => {});
 
     // Sla de rubriek op in de bibliotheek
     setSavedRubrics(prev => {
@@ -484,6 +494,19 @@ export default function Home() {
           Repertorisatie · Homeopathische Analyse
         </p>
       </footer>
+
+      {/* Share toast */}
+      {shareToast && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-forest text-cream px-4 py-2.5 rounded-lg shadow-lg text-sm font-body animate-fade-in-up"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          {shareToast}
+        </div>
+      )}
     </div>
   );
 }
