@@ -73,7 +73,7 @@ function countRemedies(g4: string, g3: string, g2: string, g1: string): number {
   return splitNames(g4).length + splitNames(g3).length + splitNames(g2).length + splitNames(g1).length;
 }
 
-export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, prefillRemedyString, isLoadingRemedies, onPrefillConsumed, contributorName, onShareRubric }: RubricInputProps) {
+export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, prefillRemedyString, isLoadingRemedies, onPrefillConsumed, onShareRubric }: RubricInputProps) {
   const [name, setName] = useState('');
   const [grade4, setGrade4] = useState('');
   const [grade3, setGrade3] = useState('');
@@ -442,6 +442,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             className="input-materia w-full"
             role="combobox"
             aria-expanded={showSuggestions}
+            aria-controls="rubriek-suggesties"
             aria-activedescendant={highlightedIndex >= 0 ? `suggestion-${highlightedIndex}` : undefined}
           />
 
@@ -452,7 +453,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
             let globalIdx = -1;
 
             return (
-              <div className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in" role="listbox">
+              <div id="rubriek-suggesties" className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in" role="listbox">
                 <div className="px-3 py-1.5 bg-forest-light/50 border-b border-forest/10 flex items-center justify-between">
                   <span className="text-[10px] text-forest font-body font-semibold uppercase tracking-wider">
                     Repertorium{communityItems.length > 0 ? ' + Community' : ' Publicum'}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   DifferentialDiagnosis,
   DDRemedyData,
@@ -69,22 +69,16 @@ function autoFillFromProfile(abbr: string): Record<DDCategory, string> {
   };
 }
 
-function createEmptyCells(): Record<DDCategory, string> {
-  return { causa: '', cp: '', mind: '', pijnSensatie: '', uitscheiding: '', modErger: '', modBeter: '', sleutelSx: '' };
-}
-
 // ─── Middel zoeker (met vrije invoer) ────────────────────────
 function RemedySearch({ onSelect, existingAbbrs }: { onSelect: (info: RemedyInfo) => void; existingAbbrs: string[] }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<RemedyInfo[]>([]);
   const [show, setShow] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (query.trim().length < 1) { setResults([]); setShow(false); return; }
-    const r = searchRemedies(query).filter(rem => !existingAbbrs.includes(rem.abbr));
-    setResults(r.slice(0, 12));
-    setShow(true);
+  // Zoekresultaten afgeleid van de query (geen setState in effect nodig)
+  const results = useMemo<RemedyInfo[]>(() => {
+    if (query.trim().length < 1) return [];
+    return searchRemedies(query).filter(rem => !existingAbbrs.includes(rem.abbr)).slice(0, 12);
   }, [query, existingAbbrs]);
 
   useEffect(() => {
@@ -114,7 +108,7 @@ function RemedySearch({ onSelect, existingAbbrs }: { onSelect: (info: RemedyInfo
       <input
         type="text"
         value={query}
-        onChange={e => setQuery(e.target.value)}
+        onChange={e => { setQuery(e.target.value); setShow(true); }}
         onKeyDown={e => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -197,7 +191,7 @@ function DDCard({
   const titleRef = useRef<HTMLInputElement>(null);
 
   // Zorg dat customRows altijd bestaat (migratie van oude data)
-  const customRows: DDCustomRow[] = dd.customRows || [];
+  const customRows: DDCustomRow[] = useMemo(() => dd.customRows || [], [dd.customRows]);
 
   // Export DD als tekst
   const exportAsText = useCallback(() => {

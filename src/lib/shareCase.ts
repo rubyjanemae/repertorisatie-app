@@ -3,7 +3,7 @@
  * Comprimeert een casus naar een URL-veilige string en vice versa
  */
 
-import { Case, Rubric, Remedy } from './types';
+import { Case } from './types';
 
 // Compact formaat: strip IDs en timestamps, gebruik korte keys
 interface CompactRemedy {

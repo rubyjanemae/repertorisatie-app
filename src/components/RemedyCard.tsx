@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { lookupRemedy } from '@/lib/remedyDatabase';
 import { lookupRemedyProfile } from '@/lib/remedyProfiles';
@@ -14,9 +14,8 @@ interface RemedyCardProps {
 export default function RemedyCard({ remedyAbbr, anchorRect, onClose }: RemedyCardProps) {
   const remedyInfo = lookupRemedy(remedyAbbr);
   const profile = lookupRemedyProfile(remedyAbbr);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  // true zodra we in de browser draaien (portal vereist document)
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   // Escape sluit kaart
   useEffect(() => {
