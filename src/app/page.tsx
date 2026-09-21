@@ -36,9 +36,8 @@ export default function Home() {
   const [sidebarExpandedPaths, setSidebarExpandedPaths] = useState<Set<string>>(new Set());
   // Gedeelde casus uit de URL (?deel=…); alleen in de browser beschikbaar
   const [importedCase, setImportedCase] = useState<Case | null>(() => checkForSharedCase());
-  // Screenshot-export: verwijzing naar de tabel en 'toon alles' tijdens vastleggen
+  // Screenshot-export: verwijzing naar de resultatentabel
   const tableRef = useRef<HTMLDivElement>(null);
-  const [capturing, setCapturing] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
 
   // Toon naamprompt als contributor nog niet ingesteld is, of als de gebruiker hem zelf opent
@@ -441,7 +440,6 @@ export default function Home() {
                     rubrics={activeCase.rubrics}
                     activeCase={activeCase}
                     tableRef={tableRef}
-                    onCapturingChange={setCapturing}
                   />
                 </div>
 
@@ -450,7 +448,6 @@ export default function Home() {
                   <RepertorisationTable
                     rubrics={activeCase.rubrics}
                     onDeleteRubric={handleDeleteRubric}
-                    showAll={capturing}
                   />
                 </div>
               </>

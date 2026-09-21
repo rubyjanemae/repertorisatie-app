@@ -10,13 +10,11 @@ import RemedyCard from './RemedyCard';
 interface RepertorisationTableProps {
   rubrics: Rubric[];
   onDeleteRubric: (id: string) => void;
-  /** Toon alle middelen ongeacht paginering (gebruikt bij screenshot-export) */
-  showAll?: boolean;
 }
 
 const PAGE_SIZE = 15;
 
-export default function RepertorisationTable({ rubrics, onDeleteRubric, showAll = false }: RepertorisationTableProps) {
+export default function RepertorisationTable({ rubrics, onDeleteRubric }: RepertorisationTableProps) {
   const [sort, setSort] = useState<SortConfig>({ field: 'totalScore', direction: 'desc' });
   const [filter, setFilter] = useState<FilterConfig>({ minScore: 0, minRubrics: 0, searchTerm: '' });
   const [showFilters, setShowFilters] = useState(false);
@@ -30,10 +28,9 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric, showAll 
   const filtered = useMemo(() => filterTally(tally, filter), [tally, filter]);
   const sorted = useMemo(() => sortTally(filtered, sort), [filtered, sort]);
 
-  const effectiveVisibleCount = showAll ? sorted.length : visibleCount;
-  const isShowingAll = effectiveVisibleCount >= sorted.length;
-  const visibleItems = sorted.slice(0, effectiveVisibleCount);
-  const hiddenCount = sorted.length - effectiveVisibleCount;
+  const isShowingAll = visibleCount >= sorted.length;
+  const visibleItems = sorted.slice(0, visibleCount);
+  const hiddenCount = sorted.length - visibleCount;
 
   const toggleSort = (field: SortField) => {
     setSort(prev => ({

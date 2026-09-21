@@ -28,8 +28,6 @@ interface ExportButtonsProps {
   activeCase?: Case | null;
   /** Wrapper rond de resultatentabel; doelwit voor de screenshot-exports */
   tableRef: RefObject<HTMLDivElement | null>;
-  /** Zet de tabel tijdelijk in "toon alles"-modus tijdens het vastleggen */
-  onCapturingChange: (capturing: boolean) => void;
 }
 
 // Kleuren per graad, gelijk aan de tokens in globals.css (zonder #)
@@ -40,7 +38,7 @@ const GRADE_COLORS: Record<number, { fill: string; text: string }> = {
   4: { fill: 'fef2f0', text: 'c0392b' },
 };
 
-export default function ExportButtons({ caseName, rubrics, activeCase, tableRef, onCapturingChange }: ExportButtonsProps) {
+export default function ExportButtons({ caseName, rubrics, activeCase, tableRef }: ExportButtonsProps) {
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'json-copied'>('idle');
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -112,28 +110,31 @@ export default function ExportButtons({ caseName, rubrics, activeCase, tableRef,
   };
 
   /**
-   * Legt de resultatentabel vast zoals die in de browser staat.
-   * Zet eerst "toon alles" aan zodat alle middelen op de afbeelding komen.
+   * Legt de resultatentabel vast zoals die nu in de browser staat (zelfde
+   * paginering en filters). Wil je alle middelen op de afbeelding, klik dan
+   * eerst op "Toon alles"; honderden rijen renderen kost anders tientallen seconden.
    */
   const captureTable = async (): Promise<HTMLCanvasElement | null> => {
     const el = tableRef.current;
     if (!el) return null;
 
-    onCapturingChange(true);
-    // Wacht twee frames zodat React de volledige tabel heeft gerenderd
-    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-
-    try {
-      return await html2canvas(el, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        ignoreElements: node => node instanceof HTMLElement && node.hasAttribute('data-export-hide'),
-      });
-    } finally {
-      onCapturingChange(false);
-    }
+    // Browsers begrenzen canvasgrootte (Chrome: 32767 px per zijde, 268M px totaal);
+    // daarboven blijft het canvas leeg. Schaal terug bij lange tabellen.
+    const MAX_SIDE = 32000;
+    const MAX_AREA = 268_000_000;
+    const scale = Math.min(
+      2,
+      MAX_SIDE / el.scrollHeight,
+      MAX_SIDE / el.scrollWidth,
+      Math.sqrt(MAX_AREA / (el.scrollWidth * el.scrollHeight)),
+    );
+    return await html2canvas(el, {
+      backgroundColor: '#ffffff',
+      scale,
+      useCORS: true,
+      logging: false,
+      ignoreElements: node => node instanceof HTMLElement && node.hasAttribute('data-export-hide'),
+    });
   };
 
   const exportAsImage = async (format: 'png' | 'jpeg') => {
