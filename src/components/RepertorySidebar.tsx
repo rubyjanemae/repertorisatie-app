@@ -1,73 +1,139 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { repertoryChapters, searchRepertory, RepertoryChapter, SubRubric } from '@/lib/repertoryData';
+import { useState, useEffect, useCallback, useMemo, useRef, Dispatch, SetStateAction } from 'react';
+import { repertoryChapters, RepertoryChapter } from '@/lib/repertoryData';
+import {
+  getDirectChildren,
+  lookupRemediesDirect,
+  countOwnRemedies,
+  searchRubrics,
+  TreeNode,
+  RubricSearchResult,
+} from '@/lib/repertoryLookup';
 
 interface RepertorySidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectRubric: (rubricPath: string) => void;
+  onAddRubric: (name: string, remedyString: string) => void;
+  existingRubricPaths: Set<string>;
+  expandedPaths: Set<string>;
+  setExpandedPaths: Dispatch<SetStateAction<Set<string>>>;
 }
 
-export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: RepertorySidebarProps) {
+type ChildrenState = { status: 'loading' } | { status: 'ready'; nodes: TreeNode[] };
+
+export default function RepertorySidebar({
+  isOpen,
+  onClose,
+  onAddRubric,
+  existingRubricPaths,
+  expandedPaths,
+  setExpandedPaths,
+}: RepertorySidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
-  const [expandedSubRubrics, setExpandedSubRubrics] = useState<Set<string>>(new Set());
+  const [childrenByPath, setChildrenByPath] = useState<Map<string, ChildrenState>>(new Map());
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<RubricSearchResult[]>([]);
+  const [searchCounts, setSearchCounts] = useState<Map<string, number>>(new Map());
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const filteredChapters = searchQuery.length >= 2
-    ? searchRepertory(searchQuery)
-    : repertoryChapters;
+  // Dedup-refs voor lazy load (voorkom dubbele fetches zonder nested setState)
+  const loadingRef = useRef<Set<string>>(new Set());
+  const loadedRef = useRef<Set<string>>(new Set());
 
-  // Bij zoeken: auto-expand alle hoofdstukken met resultaten
-  const chaptersToShow = searchQuery.length >= 2
-    ? new Set(filteredChapters.map(c => c.name))
-    : expandedChapters;
-
-  // Escape toets sluit sidebar
+  // Esc sluit
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
   }, [isOpen, onClose]);
 
-  const toggleChapter = useCallback((name: string) => {
-    setExpandedChapters(prev => {
-      const next = new Set(prev);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (!toastMessage) return;
+    const t = setTimeout(() => setToastMessage(null), 2500);
+    return () => clearTimeout(t);
+  }, [toastMessage]);
+
+  const isInSearchMode = searchQuery.trim().length >= 2;
+
+  // Helper: laad kinderen voor een pad (chapter-root of diepere rubriek)
+  const loadChildren = useCallback(async (chapterFile: string, parentPath: string) => {
+    if (loadingRef.current.has(parentPath) || loadedRef.current.has(parentPath)) return;
+    loadingRef.current.add(parentPath);
+    setChildrenByPath(prev => {
+      const next = new Map(prev);
+      next.set(parentPath, { status: 'loading' });
       return next;
     });
-  }, []);
-
-  const toggleSubRubric = useCallback((fullPath: string) => {
-    setExpandedSubRubrics(prev => {
-      const next = new Set(prev);
-      if (next.has(fullPath)) next.delete(fullPath);
-      else next.add(fullPath);
-      return next;
-    });
-  }, []);
-
-  const handleSelect = useCallback((fullPath: string) => {
-    onSelectRubric(fullPath);
-  }, [onSelectRubric]);
-
-  const isExpanded = (name: string) =>
-    searchQuery.length >= 2 ? chaptersToShow.has(name) : expandedChapters.has(name);
-
-  // Totaal subrubrieken tellen (incl. kinderen)
-  const countSubRubrics = (chapter: RepertoryChapter) => {
-    let count = 0;
-    for (const sub of chapter.subRubrics) {
-      count++;
-      if (sub.children) count += sub.children.length;
+    try {
+      const nodes = await getDirectChildren(chapterFile, parentPath);
+      loadedRef.current.add(parentPath);
+      setChildrenByPath(prev => {
+        const next = new Map(prev);
+        next.set(parentPath, { status: 'ready', nodes });
+        return next;
+      });
+    } catch {
+      loadedRef.current.add(parentPath);
+      setChildrenByPath(prev => {
+        const next = new Map(prev);
+        next.set(parentPath, { status: 'ready', nodes: [] });
+        return next;
+      });
+    } finally {
+      loadingRef.current.delete(parentPath);
     }
-    return count;
-  };
+  }, []);
+
+  const togglePath = useCallback((oorepPath: string, chapterFile: string) => {
+    const wasExpanded = expandedPaths.has(oorepPath);
+    if (!wasExpanded) {
+      void loadChildren(chapterFile, oorepPath);
+    }
+    setExpandedPaths(prev => {
+      const next = new Set(prev);
+      if (next.has(oorepPath)) next.delete(oorepPath);
+      else next.add(oorepPath);
+      return next;
+    });
+  }, [expandedPaths, loadChildren, setExpandedPaths]);
+
+  const toggleChapter = useCallback((chapter: RepertoryChapter) => {
+    togglePath(chapter.rootPath, chapter.chapterFile);
+  }, [togglePath]);
+
+  // Search: debounced
+  useEffect(() => {
+    if (!isInSearchMode) { setSearchResults([]); setSearchCounts(new Map()); return; }
+    let cancelled = false;
+    setSearchLoading(true);
+    const t = setTimeout(async () => {
+      const res = await searchRubrics(searchQuery, 50);
+      if (cancelled) return;
+      setSearchResults(res);
+      setSearchLoading(false);
+      // Count per hit ophalen (chapters worden gecached door loadChapter)
+      const counts = new Map<string, number>();
+      await Promise.all(res.map(async hit => {
+        const remStr = await lookupRemediesDirect(hit.oorepPath, hit.chapterFile);
+        counts.set(hit.oorepPath, countOwnRemedies(remStr));
+      }));
+      if (!cancelled) setSearchCounts(counts);
+    }, 150);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [searchQuery, isInSearchMode]);
+
+  const handleAdd = useCallback(async (oorepPath: string, chapterFile: string, displayPath: string) => {
+    if (existingRubricPaths.has(displayPath)) return;
+    const remStr = await lookupRemediesDirect(oorepPath, chapterFile);
+    if (!remStr) {
+      setToastMessage(`${displayPath} heeft geen eigen middelen — kies een sub-rubriek`);
+      return;
+    }
+    onAddRubric(displayPath, remStr);
+    setToastMessage(`${displayPath} · toegevoegd`);
+  }, [existingRubricPaths, onAddRubric]);
 
   return (
     <>
@@ -81,7 +147,7 @@ export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: Re
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 w-80 bg-warm-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out border-r border-warm-border ${
+        className={`fixed inset-y-0 left-0 w-full md:w-[640px] bg-warm-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out border-r border-warm-border ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -94,7 +160,7 @@ export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: Re
             </svg>
             <div>
               <h2 className="font-display font-semibold text-sm text-cream">Repertorium</h2>
-              <p className="text-cream/30 text-[10px] font-body">{repertoryChapters.length} hoofdstukken</p>
+              <p className="text-cream/30 text-[10px] font-body">{repertoryChapters.length} hoofdstukken · OOREP</p>
             </div>
           </div>
           <button
@@ -113,146 +179,272 @@ export default function RepertorySidebar({ isOpen, onClose, onSelectRubric }: Re
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Zoek hoofdstuk of rubriek..."
+            placeholder="Zoek in volledige OOREP (min. 2 tekens)..."
             className="input-materia w-full"
             autoFocus={isOpen}
           />
         </div>
 
-        {/* Hoofdstukken lijst */}
+        {/* Inhoud */}
         <div className="flex-1 overflow-y-auto">
-          {filteredChapters.length === 0 ? (
-            <p className="text-center text-warm-text-muted text-sm py-8 font-display italic">
-              Geen resultaten gevonden
-            </p>
+          {isInSearchMode ? (
+            <SearchResultsList
+              results={searchResults}
+              counts={searchCounts}
+              loading={searchLoading}
+              existingRubricPaths={existingRubricPaths}
+              onAdd={handleAdd}
+            />
           ) : (
-            filteredChapters.map(chapter => (
-              <div key={chapter.name} className="border-b border-warm-border-subtle/50">
-                {/* Hoofdstuk header */}
-                <button
-                  onClick={() => toggleChapter(chapter.name)}
-                  className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-forest-light/40 transition-colors group ${
-                    isExpanded(chapter.name) ? 'bg-forest-light/20' : ''
-                  }`}
-                >
-                  <span className="text-base shrink-0">{chapter.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-display font-semibold text-warm-text group-hover:text-forest truncate">
-                        {chapter.name}
+            repertoryChapters.map(chapter => {
+              const expanded = expandedPaths.has(chapter.rootPath);
+              const state = childrenByPath.get(chapter.rootPath);
+              return (
+                <div key={chapter.name} className="border-b border-warm-border-subtle/50">
+                  <button
+                    onClick={() => toggleChapter(chapter)}
+                    className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-forest-light/40 transition-colors group ${
+                      expanded ? 'bg-forest-light/20' : ''
+                    }`}
+                  >
+                    <span className="text-base shrink-0">{chapter.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-display font-semibold text-warm-text group-hover:text-forest truncate">
+                          {chapter.name}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-warm-text-muted font-body">
+                        {chapter.nameDutch}
+                        {state?.status === 'ready' ? ` · ${state.nodes.length} rubrieken` : ''}
                       </span>
                     </div>
-                    <span className="text-[10px] text-warm-text-muted font-body">
-                      {chapter.nameDutch} &middot; {countSubRubrics(chapter)} rubrieken
+                    <span className={`text-warm-text-muted text-xs transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}>
+                      &#9654;
                     </span>
-                  </div>
-                  <span className={`text-warm-text-muted text-xs transition-transform duration-200 ${
-                    isExpanded(chapter.name) ? 'rotate-90' : ''
-                  }`}>
-                    &#9654;
-                  </span>
-                </button>
+                  </button>
 
-                {/* Subrubrieken */}
-                {isExpanded(chapter.name) && (
-                  <div className="bg-parchment/30 pb-1 animate-fade-in">
-                    {chapter.subRubrics.map(sub => (
-                      <SubRubricItem
-                        key={sub.fullPath}
-                        sub={sub}
-                        depth={0}
-                        onSelect={handleSelect}
-                        isChildExpanded={expandedSubRubrics.has(sub.fullPath)}
-                        onToggleChildren={() => toggleSubRubric(sub.fullPath)}
-                        searchQuery={searchQuery}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
+                  {expanded && (
+                    <div className="bg-parchment/30 pb-1 animate-fade-in">
+                      {state?.status === 'loading' || !state ? (
+                        <SkeletonRows />
+                      ) : (
+                        state.nodes.map(node => (
+                          <TreeRow
+                            key={node.oorepPath}
+                            node={node}
+                            depth={0}
+                            expandedPaths={expandedPaths}
+                            childrenByPath={childrenByPath}
+                            onToggle={togglePath}
+                            onAdd={handleAdd}
+                            existingRubricPaths={existingRubricPaths}
+                          />
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
 
         {/* Footer hint */}
         <div className="px-3 py-2 border-t border-warm-border-subtle bg-parchment/50 shrink-0">
           <p className="text-[10px] text-warm-text-muted/60 text-center font-body italic">
-            Klik op een rubriek om de naam in te vullen
+            Klik op een naam om te openen · klik op <span className="font-semibold">＋</span> om toe te voegen
           </p>
         </div>
+
+        {/* Toast */}
+        {toastMessage && (
+          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-forest-dark text-cream px-4 py-2 rounded-lg shadow-lg text-sm font-body animate-fade-in max-w-[90%] text-center">
+            {toastMessage}
+          </div>
+        )}
       </div>
     </>
   );
 }
 
-// Sub-component voor een subrubriek item
-function SubRubricItem({
-  sub,
-  depth,
-  onSelect,
-  isChildExpanded,
-  onToggleChildren,
-  searchQuery,
-}: {
-  sub: SubRubric;
-  depth: number;
-  onSelect: (fullPath: string) => void;
-  isChildExpanded: boolean;
-  onToggleChildren: () => void;
-  searchQuery: string;
-}) {
-  const hasChildren = sub.children && sub.children.length > 0;
-  const pl = depth === 0 ? 'pl-10' : 'pl-14';
+// ──────────────────────────────────────────
+// Tree row (recursief)
+// ──────────────────────────────────────────
 
-  // Highlight zoekterm in naam
-  const highlightMatch = (text: string) => {
-    if (searchQuery.length < 2) return text;
-    const idx = text.toLowerCase().indexOf(searchQuery.toLowerCase());
-    if (idx === -1) return text;
-    return (
-      <>
-        {text.slice(0, idx)}
-        <span className="bg-gold-light rounded-sm text-sienna">{text.slice(idx, idx + searchQuery.length)}</span>
-        {text.slice(idx + searchQuery.length)}
-      </>
-    );
-  };
+function TreeRow({
+  node,
+  depth,
+  expandedPaths,
+  childrenByPath,
+  onToggle,
+  onAdd,
+  existingRubricPaths,
+}: {
+  node: TreeNode;
+  depth: number;
+  expandedPaths: Set<string>;
+  childrenByPath: Map<string, ChildrenState>;
+  onToggle: (oorepPath: string, chapterFile: string) => void;
+  onAdd: (oorepPath: string, chapterFile: string, displayPath: string) => void;
+  existingRubricPaths: Set<string>;
+}) {
+  const expanded = expandedPaths.has(node.oorepPath);
+  const state = childrenByPath.get(node.oorepPath);
+  const canExpand = node.childCount > 0;
+  const isAdded = existingRubricPaths.has(node.displayPath);
+  const canAdd = node.hasOwnEntry && node.ownCount > 0;
+
+  // Indent op basis van depth (beperkt tot max 8)
+  const indent = Math.min(depth, 8);
+  const padLeft = `calc(${0.75 + indent * 0.9}rem)`;
 
   return (
     <>
-      <div className={`flex items-center ${pl} pr-3`}>
+      <div className="flex items-center pr-2 group hover:bg-forest-light/20 transition-colors" style={{ paddingLeft: padLeft }}>
         <button
-          onClick={() => onSelect(sub.fullPath)}
-          className="flex-1 text-left py-1.5 text-sm text-warm-text-secondary font-body hover:text-forest transition-colors truncate"
-          title={sub.fullPath}
+          onClick={() => canExpand && onToggle(node.oorepPath, node.chapterFile)}
+          className={`flex-1 text-left py-1.5 flex items-center gap-2 min-w-0 ${canExpand ? 'cursor-pointer' : 'cursor-default'}`}
+          title={node.displayPath}
         >
-          {highlightMatch(sub.name)}
+          <span className={`text-[10px] text-warm-text-muted shrink-0 w-3 transition-transform duration-150 ${expanded ? 'rotate-90' : ''} ${canExpand ? '' : 'opacity-0'}`}>
+            &#9654;
+          </span>
+          <span className={`text-sm font-body truncate ${isAdded ? 'text-warm-text-muted' : 'text-warm-text-secondary group-hover:text-forest'}`}>
+            {node.displayName}
+          </span>
+          {node.hasOwnEntry && node.ownCount > 0 && (
+            <span className="text-[11px] font-mono text-forest/80 shrink-0">
+              {node.ownCount}
+            </span>
+          )}
+          {node.childCount > 0 && (
+            <span className="text-[10px] font-mono text-warm-text-muted/70 shrink-0">
+              +{node.childCount}
+            </span>
+          )}
         </button>
-        {hasChildren && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleChildren(); }}
-            className="text-[10px] text-warm-text-muted hover:text-forest px-1.5 py-0.5 rounded hover:bg-forest-light transition-colors shrink-0 font-body"
+
+        {isAdded ? (
+          <span
+            className="w-6 h-6 flex items-center justify-center text-forest shrink-0"
+            title="Al toegevoegd aan casus"
           >
-            {isChildExpanded ? '▼' : `+${sub.children!.length}`}
+            ✓
+          </span>
+        ) : canAdd ? (
+          <button
+            onClick={() => onAdd(node.oorepPath, node.chapterFile, node.displayPath)}
+            className="w-6 h-6 rounded-md hover:bg-gold/30 text-forest hover:text-forest-dark flex items-center justify-center text-base leading-none shrink-0 transition-colors"
+            title="Toevoegen aan casus"
+          >
+            ＋
           </button>
+        ) : (
+          <span className="w-6 h-6 shrink-0" />
         )}
       </div>
 
-      {/* Kinderen (dieper niveau) */}
-      {hasChildren && isChildExpanded && (
-        <div className="bg-forest-light/20 animate-fade-in">
-          {sub.children!.map(child => (
-            <button
-              key={child.fullPath}
-              onClick={() => onSelect(child.fullPath)}
-              className="w-full text-left pl-14 pr-3 py-1 text-xs text-warm-text-muted font-body hover:text-forest hover:bg-forest-light/40 transition-colors truncate"
-              title={child.fullPath}
-            >
-              ↳ {highlightMatch(child.name)}
-            </button>
-          ))}
+      {expanded && (
+        <div className="animate-fade-in">
+          {!state || state.status === 'loading' ? (
+            <SkeletonRows />
+          ) : (
+            state.nodes.map(child => (
+              <TreeRow
+                key={child.oorepPath}
+                node={child}
+                depth={depth + 1}
+                expandedPaths={expandedPaths}
+                childrenByPath={childrenByPath}
+                onToggle={onToggle}
+                onAdd={onAdd}
+                existingRubricPaths={existingRubricPaths}
+              />
+            ))
+          )}
         </div>
       )}
     </>
   );
 }
+
+// ──────────────────────────────────────────
+// Search results
+// ──────────────────────────────────────────
+
+function SearchResultsList({
+  results,
+  counts,
+  loading,
+  existingRubricPaths,
+  onAdd,
+}: {
+  results: RubricSearchResult[];
+  counts: Map<string, number>;
+  loading: boolean;
+  existingRubricPaths: Set<string>;
+  onAdd: (oorepPath: string, chapterFile: string, displayPath: string) => void;
+}) {
+  if (loading && results.length === 0) return <SkeletonRows n={6} />;
+  if (results.length === 0) {
+    return (
+      <p className="text-center text-warm-text-muted text-sm py-8 font-display italic">
+        Geen rubrieken gevonden
+      </p>
+    );
+  }
+
+  return (
+    <div className="py-1">
+      {results.map(hit => {
+        const count = counts.get(hit.oorepPath);
+        const isAdded = existingRubricPaths.has(hit.displayPath);
+        return (
+          <div key={hit.oorepPath} className="flex items-center px-3 py-1.5 group hover:bg-forest-light/20 transition-colors">
+            <div className="flex-1 min-w-0 pr-2">
+              <div className={`text-sm font-body truncate ${isAdded ? 'text-warm-text-muted' : 'text-warm-text'}`}>
+                {hit.displayPath}
+              </div>
+            </div>
+            {count !== undefined && count > 0 && (
+              <span className="text-[11px] font-mono text-forest/80 shrink-0 mr-2">
+                {count}
+              </span>
+            )}
+            {isAdded ? (
+              <span className="w-6 h-6 flex items-center justify-center text-forest shrink-0" title="Al toegevoegd">
+                ✓
+              </span>
+            ) : count && count > 0 ? (
+              <button
+                onClick={() => onAdd(hit.oorepPath, hit.chapterFile, hit.displayPath)}
+                className="w-6 h-6 rounded-md hover:bg-gold/30 text-forest hover:text-forest-dark flex items-center justify-center text-base leading-none shrink-0 transition-colors"
+                title="Toevoegen aan casus"
+              >
+                ＋
+              </button>
+            ) : (
+              <span className="w-6 h-6 shrink-0" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Eenvoudig skelet van een paar grijze rijen tijdens chapter-load
+function SkeletonRows({ n = 4 }: { n?: number }) {
+  const arr = useMemo(() => Array.from({ length: n }), [n]);
+  return (
+    <div className="py-1 animate-pulse">
+      {arr.map((_, i) => (
+        <div key={i} className="px-6 py-2">
+          <div className="h-3 bg-warm-border rounded w-[60%]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+

@@ -487,3 +487,107 @@ export async function lookupRemediesDirect(oorepPath: string, chapterFile: strin
   const data = await loadChapter(chapterFile);
   return data[oorepPath] || '';
 }
+
+// ──────────────────────────────────────────
+// Tree-navigatie helpers (voor de sidebar)
+// ──────────────────────────────────────────
+
+export interface TreeNode {
+  oorepPath: string;        // "Mind, anxiety"
+  chapterFile: string;      // "mind"
+  displayName: string;      // "Anxiety" (het laatste segment, Title Case)
+  displayPath: string;      // "Mind - Anxiety" (sidebar-style volledige pad)
+  ownCount: number;         // aantal middelen in deze rubriek zelf (0 als virtual parent)
+  childCount: number;       // aantal directe kind-rubrieken in OOREP
+  hasOwnEntry: boolean;     // false = virtual parent (geen eigen rubriek-entry)
+}
+
+/**
+ * Tel het aantal middelen in een rubriek-waarde.
+ * OOREP gebruikt komma-gescheiden lijst; splitsen en niet-lege items tellen.
+ */
+export function countOwnRemedies(remedyString: string): number {
+  if (!remedyString) return 0;
+  return remedyString.split(',').map(s => s.trim()).filter(s => s.length > 0).length;
+}
+
+/**
+ * Geef de directe kinderen van een OOREP-pad binnen een hoofdstuk.
+ * Als `parentPath` null is: geef de rubrieken op niveau 2 (direct onder het hoofdstuk).
+ *
+ * Virtual parents: als een intermediair pad niet zelf bestaat (bv. "Mind, absent-minded"
+ * ontbreekt maar "Mind, absent-minded, morning" bestaat), wordt dat pad alsnog als
+ * knoop opgenomen met `hasOwnEntry: false`.
+ */
+export async function getDirectChildren(
+  chapterFile: string,
+  parentPath: string | null,
+): Promise<TreeNode[]> {
+  const data = await loadChapter(chapterFile);
+
+  // Alle keys van dit hoofdstuk; we werken met de letterlijke OOREP-paden.
+  const keys = Object.keys(data);
+  const nodes = new Map<string, TreeNode>();
+
+  const parentDepth = parentPath ? parentPath.split(', ').length : 1;
+  const prefix = parentPath ? parentPath + ', ' : '';
+
+  for (const key of keys) {
+    // Alleen paden die onder de parent vallen
+    if (parentPath) {
+      if (!key.startsWith(prefix)) continue;
+    } else {
+      // Top-level: het hoofdstuk zelf overslaan, alleen diepere paden
+      if (key.split(', ').length < 2) continue;
+    }
+
+    const segments = key.split(', ');
+    // Pad tot en met het volgende niveau na de parent
+    const childDepth = parentDepth + 1;
+    if (segments.length < childDepth) continue;
+
+    const childPath = segments.slice(0, childDepth).join(', ');
+    if (!nodes.has(childPath)) {
+      const ownValue = data[childPath];
+      nodes.set(childPath, {
+        oorepPath: childPath,
+        chapterFile,
+        displayName: segments[childDepth - 1],
+        displayPath: oorepPathToDisplayPath(childPath),
+        ownCount: ownValue ? countOwnRemedies(ownValue) : 0,
+        childCount: 0,
+        hasOwnEntry: !!ownValue,
+      });
+    }
+
+    // Als dit pad een descendant is van de child, verhoog childCount op de child
+    if (segments.length > childDepth) {
+      const node = nodes.get(childPath)!;
+      // Alleen unieke directe kinderen tellen
+      const directChildPath = segments.slice(0, childDepth + 1).join(', ');
+      // Gebruik een Set via closure — simplist: stockeer uniek-setje in een side-map
+      (node as TreeNode & { _kids?: Set<string> })._kids ??= new Set<string>();
+      (node as TreeNode & { _kids?: Set<string> })._kids!.add(directChildPath);
+    }
+  }
+
+  // Finaliseer childCount en ruim _kids op
+  const out: TreeNode[] = [];
+  for (const node of nodes.values()) {
+    const withKids = node as TreeNode & { _kids?: Set<string> };
+    node.childCount = withKids._kids ? withKids._kids.size : 0;
+    delete withKids._kids;
+    out.push(node);
+  }
+
+  // Alfabetisch sorteren op laatste segment
+  out.sort((a, b) => a.displayName.localeCompare(b.displayName));
+  return out;
+}
+
+/**
+ * Publieke versie van oorepPathToDisplayPath voor UI-componenten.
+ */
+export function oorepToDisplayPath(oorepPath: string): string {
+  return oorepPathToDisplayPath(oorepPath);
+}

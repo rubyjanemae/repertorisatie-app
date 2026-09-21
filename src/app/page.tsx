@@ -5,7 +5,6 @@ import { Case, Rubric, SavedRubric, DifferentialDiagnosis } from '@/lib/types';
 import { parseRemedies } from '@/lib/parseRemedies';
 import { createSampleCase, createSampleLibrary } from '@/lib/sampleData';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { lookupRemedies } from '@/lib/repertoryLookup';
 import { checkForSharedCase, clearShareParam } from '@/lib/shareCase';
 import { shareRubric } from '@/lib/sharedRubrics';
 import CaseManager from '@/components/CaseManager';
@@ -35,9 +34,7 @@ export default function Home() {
   const [nameInput, setNameInput] = useState('');
   const [activeTab, setActiveTab] = useState<'repertorisatie' | 'dd'>('repertorisatie');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [prefillRubricName, setPrefillRubricName] = useState<string | null>(null);
-  const [prefillRemedyString, setPrefillRemedyString] = useState<string | null>(null);
-  const [isLoadingRemedies, setIsLoadingRemedies] = useState(false);
+  const [sidebarExpandedPaths, setSidebarExpandedPaths] = useState<Set<string>>(new Set());
   const [importedCase, setImportedCase] = useState<Case | null>(null);
 
   // Toon naamprompt als contributor nog niet ingesteld is
@@ -223,22 +220,10 @@ export default function Home() {
       <RepertorySidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onSelectRubric={async (name) => {
-          setPrefillRubricName(name);
-          setPrefillRemedyString(null);
-          setSidebarOpen(false);
-          setIsLoadingRemedies(true);
-          try {
-            const result = await lookupRemedies(name);
-            if (result.found) {
-              setPrefillRemedyString(result.remedyString);
-            }
-          } catch (err) {
-            console.warn('Kon middelen niet opzoeken:', err);
-          } finally {
-            setIsLoadingRemedies(false);
-          }
-        }}
+        onAddRubric={handleAddRubric}
+        existingRubricPaths={new Set((activeCase?.rubrics || []).map(r => r.name))}
+        expandedPaths={sidebarExpandedPaths}
+        setExpandedPaths={setSidebarExpandedPaths}
       />
 
       {/* Header */}
@@ -443,13 +428,6 @@ export default function Home() {
                   <RubricInput
                     onAdd={handleAddRubric}
                     savedRubrics={savedRubrics}
-                    prefillRubricName={prefillRubricName}
-                    prefillRemedyString={prefillRemedyString}
-                    isLoadingRemedies={isLoadingRemedies}
-                    onPrefillConsumed={() => {
-                      setPrefillRubricName(null);
-                      setPrefillRemedyString(null);
-                    }}
                     contributorName={contributorName}
                     onShareRubric={handleShareRubric}
                   />
