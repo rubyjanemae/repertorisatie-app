@@ -10,11 +10,13 @@ import RemedyCard from './RemedyCard';
 interface RepertorisationTableProps {
   rubrics: Rubric[];
   onDeleteRubric: (id: string) => void;
+  /** Toon alle middelen ongeacht paginering (gebruikt bij screenshot-export) */
+  showAll?: boolean;
 }
 
 const PAGE_SIZE = 15;
 
-export default function RepertorisationTable({ rubrics, onDeleteRubric }: RepertorisationTableProps) {
+export default function RepertorisationTable({ rubrics, onDeleteRubric, showAll = false }: RepertorisationTableProps) {
   const [sort, setSort] = useState<SortConfig>({ field: 'totalScore', direction: 'desc' });
   const [filter, setFilter] = useState<FilterConfig>({ minScore: 0, minRubrics: 0, searchTerm: '' });
   const [showFilters, setShowFilters] = useState(false);
@@ -28,9 +30,10 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
   const filtered = useMemo(() => filterTally(tally, filter), [tally, filter]);
   const sorted = useMemo(() => sortTally(filtered, sort), [filtered, sort]);
 
-  const isShowingAll = visibleCount >= sorted.length;
-  const visibleItems = sorted.slice(0, visibleCount);
-  const hiddenCount = sorted.length - visibleCount;
+  const effectiveVisibleCount = showAll ? sorted.length : visibleCount;
+  const isShowingAll = effectiveVisibleCount >= sorted.length;
+  const visibleItems = sorted.slice(0, effectiveVisibleCount);
+  const hiddenCount = sorted.length - effectiveVisibleCount;
 
   const toggleSort = (field: SortField) => {
     setSort(prev => ({
@@ -70,7 +73,7 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2" data-export-hide>
           <button
             onClick={() => setShowRubricList(!showRubricList)}
             className="btn-secondary"
@@ -117,7 +120,7 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
 
       {/* Filter bar */}
       {showFilters && (
-        <div className="px-5 py-3 border-b border-warm-border-subtle bg-parchment/50 flex flex-wrap gap-4 items-end animate-fade-in">
+        <div data-export-hide className="px-5 py-3 border-b border-warm-border-subtle bg-parchment/50 flex flex-wrap gap-4 items-end animate-fade-in">
           <div>
             <label className="block text-[10px] text-warm-text-muted mb-1 font-body uppercase tracking-wider">Zoek middel</label>
             <input
@@ -264,7 +267,7 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
 
       {/* Toon meer / Toon alles knoppen */}
       {sorted.length > PAGE_SIZE && (
-        <div className="px-5 py-3 border-t border-warm-border-subtle flex items-center justify-between bg-parchment/30">
+        <div data-export-hide className="px-5 py-3 border-t border-warm-border-subtle flex items-center justify-between bg-parchment/30">
           <p className="text-xs text-warm-text-muted font-body">
             {isShowingAll
               ? `Alle ${sorted.length} middelen zichtbaar`
@@ -311,7 +314,7 @@ export default function RepertorisationTable({ rubrics, onDeleteRubric }: Repert
 
       {/* Expanded detail */}
       {expandedRemedy && (
-        <div className="px-5 py-4 border-t border-warm-border bg-parchment/50 animate-fade-in">
+        <div data-export-hide className="px-5 py-4 border-t border-warm-border bg-parchment/50 animate-fade-in">
           {(() => {
             const item = sorted.find(s => s.name === expandedRemedy);
             if (!item) return null;

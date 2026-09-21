@@ -1,18 +1,48 @@
 'use client';
 
+import { RefObject, useMemo, useState } from 'react';
 import { Rubric, Case } from '@/lib/types';
 import { tallyRemedies, sortTally } from '@/lib/tallyRemedies';
 import { generateShareUrl } from '@/lib/shareCase';
-import { useMemo, useState } from 'react';
+import { gradeToDisplay } from '@/lib/parseRemedies';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableRow,
+  TableCell,
+  TextRun,
+  WidthType,
+  HeadingLevel,
+  ShadingType,
+  AlignmentType,
+} from 'docx';
+import { saveAs } from 'file-saver';
 
 interface ExportButtonsProps {
   caseName: string;
   rubrics: Rubric[];
   activeCase?: Case | null;
+  /** Wrapper rond de resultatentabel; doelwit voor de screenshot-exports */
+  tableRef: RefObject<HTMLDivElement | null>;
+  /** Zet de tabel tijdelijk in "toon alles"-modus tijdens het vastleggen */
+  onCapturingChange: (capturing: boolean) => void;
 }
 
-export default function ExportButtons({ caseName, rubrics, activeCase }: ExportButtonsProps) {
+// Kleuren per graad, gelijk aan de tokens in globals.css (zonder #)
+const GRADE_COLORS: Record<number, { fill: string; text: string }> = {
+  1: { fill: 'f4f4f4', text: '8a8a8a' },
+  2: { fill: 'eef4fb', text: '2e7bbd' },
+  3: { fill: 'fef7ec', text: 'd4841a' },
+  4: { fill: 'fef2f0', text: 'c0392b' },
+};
+
+export default function ExportButtons({ caseName, rubrics, activeCase, tableRef, onCapturingChange }: ExportButtonsProps) {
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'json-copied'>('idle');
+  const [busy, setBusy] = useState<string | null>(null);
 
   const tally = useMemo(() => {
     const raw = tallyRemedies(rubrics);
@@ -21,10 +51,13 @@ export default function ExportButtons({ caseName, rubrics, activeCase }: ExportB
 
   if (rubrics.length === 0) return null;
 
+  const fileBase = `repertorisatie-${caseName.replace(/\s+/g, '_')}`;
+  const datum = new Date().toLocaleDateString('nl-NL');
+
   const exportAsText = () => {
     let text = `REPERTORISATIE: ${caseName}\n`;
     text += `${'='.repeat(60)}\n`;
-    text += `Datum: ${new Date().toLocaleDateString('nl-NL')}\n`;
+    text += `Datum: ${datum}\n`;
     text += `Rubrieken: ${rubrics.length}\n`;
     text += `Middelen: ${tally.length}\n\n`;
 
@@ -51,7 +84,7 @@ export default function ExportButtons({ caseName, rubrics, activeCase }: ExportB
       text += `${String(idx + 1).padStart(4)}  ${item.name.padEnd(16)}  ${String(item.totalScore).padStart(6)}  ${`${item.rubricCount}/${rubrics.length}`.padStart(6)}  ${perRubric}\n`;
     });
 
-    downloadFile(text, `repertorisatie-${caseName.replace(/\s+/g, '_')}.txt`, 'text/plain');
+    downloadFile(text, `${fileBase}.txt`, 'text/plain');
   };
 
   const exportAsCsv = () => {
@@ -75,83 +108,158 @@ export default function ExportButtons({ caseName, rubrics, activeCase }: ExportB
     let csv = headers.join(';') + '\n';
     csv += rows.map(r => r.join(';')).join('\n');
 
-    downloadFile(csv, `repertorisatie-${caseName.replace(/\s+/g, '_')}.csv`, 'text/csv');
+    downloadFile(csv, `${fileBase}.csv`, 'text/csv');
   };
 
-  const exportAsHtml = () => {
-    let html = `<!DOCTYPE html>
-<html lang="nl">
-<head>
-  <meta charset="UTF-8">
-  <title>Repertorisatie: ${caseName}</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 2rem; max-width: 1200px; margin: 0 auto; color: #2d2a24; background: #faf7f2; }
-    h1 { color: #3d6b4e; border-bottom: 2px solid #c4973b; padding-bottom: 0.5rem; font-family: Georgia, serif; }
-    h2 { color: #3d6b4e; margin-top: 2rem; font-family: Georgia, serif; }
-    .meta { color: #6b6456; margin-bottom: 2rem; }
-    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-    th { background: #2d3830; color: #faf7f2; padding: 8px 12px; text-align: left; font-size: 0.85rem; }
-    td { padding: 6px 12px; border-bottom: 1px solid #e8dfd0; font-size: 0.85rem; }
-    tr:nth-child(even) { background: #f5f0e8; }
-    tr:hover { background: #e8f0eb; }
-    .top3 { background: #e8f0eb !important; font-weight: 600; }
-    .grade-1 { color: #8a8379; }
-    .grade-2 { color: #3468a3; font-weight: 500; }
-    .grade-3 { color: #c77c2a; font-weight: 700; }
-    .grade-4 { color: #a62b1f; font-weight: 800; }
-    .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; margin: 1px; }
-    .badge-1 { background: #f0ede8; color: #8a8379; }
-    .badge-2 { background: #e5eef8; color: #3468a3; }
-    .badge-3 { background: #fef3e2; color: #c77c2a; }
-    .badge-4 { background: #fde8e5; color: #a62b1f; }
-    .rubric-list { margin-top: 0.5rem; }
-    .rubric-item { padding: 4px 0; color: #6b6456; font-size: 0.85rem; }
-  </style>
-</head>
-<body>
-  <h1>Repertorisatie: ${caseName}</h1>
-  <div class="meta">
-    <p>Datum: ${new Date().toLocaleDateString('nl-NL')}</p>
-    <p>Rubrieken: ${rubrics.length} | Middelen: ${tally.length}</p>
-  </div>
+  /**
+   * Legt de resultatentabel vast zoals die in de browser staat.
+   * Zet eerst "toon alles" aan zodat alle middelen op de afbeelding komen.
+   */
+  const captureTable = async (): Promise<HTMLCanvasElement | null> => {
+    const el = tableRef.current;
+    if (!el) return null;
 
-  <h2>Rubrieken</h2>
-  <div class="rubric-list">
-    ${rubrics.map((r, i) => `<div class="rubric-item"><strong>R${i + 1}:</strong> ${r.name} (${r.remedies.length} middelen)</div>`).join('\n    ')}
-  </div>
+    onCapturingChange(true);
+    // Wacht twee frames zodat React de volledige tabel heeft gerenderd
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
-  <h2>Resultaten</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Middel</th>
-        <th>Score</th>
-        <th>Rubr.</th>
-        <th>Per rubriek</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${tally.map((item, idx) => {
-        const badges = item.perRubric.map(pr => {
-          const ri = rubrics.findIndex(r => r.id === pr.rubricId);
-          return `<span class="badge badge-${pr.grade}">R${ri + 1}:${pr.grade}</span>`;
-        }).join(' ');
+    try {
+      return await html2canvas(el, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        ignoreElements: node => node instanceof HTMLElement && node.hasAttribute('data-export-hide'),
+      });
+    } finally {
+      onCapturingChange(false);
+    }
+  };
 
-        return `<tr class="${idx < 3 ? 'top3' : ''}">
-        <td>${idx + 1}</td>
-        <td>${item.name}</td>
-        <td><strong>${item.totalScore}</strong></td>
-        <td>${item.rubricCount}/${rubrics.length}</td>
-        <td>${badges}</td>
-      </tr>`;
-      }).join('\n      ')}
-    </tbody>
-  </table>
-</body>
-</html>`;
+  const exportAsImage = async (format: 'png' | 'jpeg') => {
+    setBusy(format);
+    try {
+      const canvas = await captureTable();
+      if (!canvas) return;
+      const ext = format === 'png' ? 'png' : 'jpg';
+      const blob = await new Promise<Blob | null>(resolve =>
+        canvas.toBlob(resolve, `image/${format}`, 0.92)
+      );
+      if (blob) saveAs(blob, `${fileBase}.${ext}`);
+    } finally {
+      setBusy(null);
+    }
+  };
 
-    downloadFile(html, `repertorisatie-${caseName.replace(/\s+/g, '_')}.html`, 'text/html');
+  const exportAsPdf = async () => {
+    setBusy('pdf');
+    try {
+      const canvas = await captureTable();
+      if (!canvas) return;
+
+      const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+      const pdf = new jsPDF({ orientation, unit: 'pt', format: 'a4' });
+      const margin = 28;
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW - margin * 2;
+      const pxPerPt = canvas.width / imgW;
+      const sliceHeightPx = Math.floor((pageH - margin * 2) * pxPerPt);
+
+      // Lange tabellen worden in stukken over meerdere pagina's verdeeld
+      for (let offset = 0, page = 0; offset < canvas.height; offset += sliceHeightPx, page++) {
+        const slice = document.createElement('canvas');
+        slice.width = canvas.width;
+        slice.height = Math.min(sliceHeightPx, canvas.height - offset);
+        const ctx = slice.getContext('2d');
+        if (!ctx) break;
+        ctx.drawImage(canvas, 0, offset, canvas.width, slice.height, 0, 0, canvas.width, slice.height);
+
+        if (page > 0) pdf.addPage();
+        pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imgW, slice.height / pxPerPt);
+      }
+
+      pdf.save(`${fileBase}.pdf`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const exportAsDocx = async () => {
+    setBusy('docx');
+    try {
+      const cell = (text: string, opts: { bold?: boolean; color?: string; fill?: string; center?: boolean } = {}) =>
+        new TableCell({
+          shading: opts.fill ? { type: ShadingType.CLEAR, fill: opts.fill, color: 'auto' } : undefined,
+          children: [
+            new Paragraph({
+              alignment: opts.center ? AlignmentType.CENTER : AlignmentType.LEFT,
+              children: [new TextRun({ text, bold: opts.bold, color: opts.color, size: 18 })],
+            }),
+          ],
+        });
+
+      const headerFill = '1b3a2d';
+      const headerRow = new TableRow({
+        tableHeader: true,
+        children: [
+          cell('#', { bold: true, color: 'ffffff', fill: headerFill }),
+          cell('Middel', { bold: true, color: 'ffffff', fill: headerFill }),
+          cell('Score', { bold: true, color: 'ffffff', fill: headerFill, center: true }),
+          cell('Rubr.', { bold: true, color: 'ffffff', fill: headerFill, center: true }),
+          ...rubrics.map((_, i) => cell(`R${i + 1}`, { bold: true, color: 'ffffff', fill: headerFill, center: true })),
+        ],
+      });
+
+      const bodyRows = tally.map((item, idx) => {
+        const top3 = idx < 3;
+        return new TableRow({
+          children: [
+            cell(String(idx + 1)),
+            cell(item.name, { bold: top3 }),
+            cell(String(item.totalScore), { bold: true, center: true }),
+            cell(`${item.rubricCount}/${rubrics.length}`, { center: true }),
+            ...rubrics.map(r => {
+              const pr = item.perRubric.find(p => p.rubricId === r.id);
+              if (!pr) return cell('');
+              const c = GRADE_COLORS[pr.grade];
+              return cell(gradeToDisplay(pr.grade), { bold: pr.grade >= 3, color: c.text, fill: c.fill, center: true });
+            }),
+          ],
+        });
+      });
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: { page: { size: { orientation: rubrics.length > 6 ? 'landscape' : 'portrait' } } },
+            children: [
+              new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(`Repertorisatie: ${caseName}`)] }),
+              new Paragraph({ children: [new TextRun({ text: `Datum: ${datum}  ·  Rubrieken: ${rubrics.length}  ·  Middelen: ${tally.length}`, color: '5c5c5c' })] }),
+              new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun('Rubrieken')] }),
+              ...rubrics.map((r, i) =>
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `R${i + 1}: `, bold: true }),
+                    new TextRun(`${r.name} (${r.remedies.length} middelen)`),
+                  ],
+                })
+              ),
+              new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun('Resultaten')] }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [headerRow, ...bodyRows],
+              }),
+            ],
+          },
+        ],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${fileBase}.docx`);
+    } finally {
+      setBusy(null);
+    }
   };
 
   const handleShare = async () => {
@@ -179,27 +287,21 @@ export default function ExportButtons({ caseName, rubrics, activeCase }: ExportB
     }
   };
 
+  const exportButton = (label: string, key: string, onClick: () => void) => (
+    <button onClick={onClick} disabled={busy !== null} className="btn-secondary disabled:opacity-50">
+      {busy === key ? 'Bezig…' : label}
+    </button>
+  );
+
   return (
     <div className="flex flex-wrap items-center gap-2 mb-5">
       <span className="text-[11px] text-warm-text-muted font-body uppercase tracking-wider mr-1">Exporteer</span>
-      <button
-        onClick={exportAsText}
-        className="btn-secondary"
-      >
-        Tekst
-      </button>
-      <button
-        onClick={exportAsCsv}
-        className="btn-secondary"
-      >
-        CSV
-      </button>
-      <button
-        onClick={exportAsHtml}
-        className="btn-secondary"
-      >
-        HTML
-      </button>
+      {exportButton('Tekst', 'txt', exportAsText)}
+      {exportButton('CSV', 'csv', exportAsCsv)}
+      {exportButton('PNG', 'png', () => exportAsImage('png'))}
+      {exportButton('JPG', 'jpeg', () => exportAsImage('jpeg'))}
+      {exportButton('PDF', 'pdf', exportAsPdf)}
+      {exportButton('Word', 'docx', exportAsDocx)}
       {activeCase && (
         <>
           <span className="w-px h-4 bg-warm-border-subtle mx-1" />
@@ -227,12 +329,5 @@ export default function ExportButtons({ caseName, rubrics, activeCase }: ExportB
 
 function downloadFile(content: string, filename: string, mimeType: string) {
   const blob = new Blob([content], { type: `${mimeType};charset=utf-8` });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  saveAs(blob, filename);
 }

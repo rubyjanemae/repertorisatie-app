@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import { Case, Rubric, SavedRubric, DifferentialDiagnosis } from '@/lib/types';
 import { parseRemedies } from '@/lib/parseRemedies';
 import { createSampleCase, createSampleLibrary } from '@/lib/sampleData';
@@ -21,8 +21,7 @@ function generateId() {
 
 export default function Home() {
   // Hydration guard: voorkom mismatch tussen server en client
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const [cases, setCases] = useLocalStorage<Case[]>('repertorisatie-cases', []);
   const [activeCaseId, setActiveCaseId] = useLocalStorage<string | null>('repertorisatie-active-case', null);
@@ -30,20 +29,20 @@ export default function Home() {
   const [savedRubrics, setSavedRubrics] = useLocalStorage<SavedRubric[]>('repertorisatie-rubric-library', []);
   const [contributorName, setContributorName] = useLocalStorage<string>('repertorisatie-contributor', '');
   const [ddPerCase, setDdPerCase] = useLocalStorage<Record<string, DifferentialDiagnosis[]>>('repertorisatie-dd', {});
-  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [namePromptOpen, setNamePromptOpen] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [activeTab, setActiveTab] = useState<'repertorisatie' | 'dd'>('repertorisatie');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarExpandedPaths, setSidebarExpandedPaths] = useState<Set<string>>(new Set());
-  const [importedCase, setImportedCase] = useState<Case | null>(null);
+  // Gedeelde casus uit de URL (?deel=…); alleen in de browser beschikbaar
+  const [importedCase, setImportedCase] = useState<Case | null>(() => checkForSharedCase());
+  // Screenshot-export: verwijzing naar de tabel en 'toon alles' tijdens vastleggen
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [capturing, setCapturing] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
 
-  // Toon naamprompt als contributor nog niet ingesteld is
-  useEffect(() => {
-    if (mounted && !contributorName) {
-      setShowNamePrompt(true);
-    }
-  }, [mounted, contributorName]);
+  // Toon naamprompt als contributor nog niet ingesteld is, of als de gebruiker hem zelf opent
+  const showNamePrompt = namePromptOpen || (mounted && !contributorName);
 
   // Share toast: verdwijnt automatisch na 2 sec
   useEffect(() => {
@@ -51,14 +50,6 @@ export default function Home() {
     const t = setTimeout(() => setShareToast(null), 2000);
     return () => clearTimeout(t);
   }, [shareToast]);
-
-  // Check of er een gedeelde casus in de URL zit
-  useEffect(() => {
-    const shared = checkForSharedCase();
-    if (shared) {
-      setImportedCase(shared);
-    }
-  }, []);
 
   // Laad sample data als het de eerste keer is
   if (!sampleLoaded && cases.length === 0) {
@@ -184,7 +175,7 @@ export default function Home() {
         }];
       }
     });
-  }, [activeCaseId, updateCase, setSavedRubrics]);
+  }, [activeCaseId, updateCase, setSavedRubrics, contributorName]);
 
   const handleDeleteRubric = useCallback((rubricId: string) => {
     if (!activeCaseId) return;
@@ -268,7 +259,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               {contributorName && (
                 <button
-                  onClick={() => { setNameInput(contributorName); setShowNamePrompt(true); }}
+                  onClick={() => { setNameInput(contributorName); setNamePromptOpen(true); }}
                   className="text-[10px] text-cream/30 hover:text-cream/60 font-body hidden sm:block transition-colors"
                   title="Naam wijzigen"
                 >
@@ -341,7 +332,7 @@ export default function Home() {
                 onKeyDown={e => {
                   if (e.key === 'Enter' && nameInput.trim()) {
                     setContributorName(nameInput.trim());
-                    setShowNamePrompt(false);
+                    setNamePromptOpen(false);
                   }
                 }}
                 placeholder="bijv. Ruby"
@@ -352,7 +343,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     setContributorName(nameInput.trim() || 'Anoniem');
-                    setShowNamePrompt(false);
+                    setNamePromptOpen(false);
                   }}
                   className="btn-primary flex-1"
                 >
@@ -445,14 +436,21 @@ export default function Home() {
 
                 {/* Export knoppen */}
                 <div className="animate-fade-in-up stagger-3">
-                  <ExportButtons caseName={activeCase.name} rubrics={activeCase.rubrics} activeCase={activeCase} />
+                  <ExportButtons
+                    caseName={activeCase.name}
+                    rubrics={activeCase.rubrics}
+                    activeCase={activeCase}
+                    tableRef={tableRef}
+                    onCapturingChange={setCapturing}
+                  />
                 </div>
 
                 {/* Repertorisatie tabel */}
-                <div className="animate-fade-in-up stagger-4">
+                <div ref={tableRef} className="animate-fade-in-up stagger-4">
                   <RepertorisationTable
                     rubrics={activeCase.rubrics}
                     onDeleteRubric={handleDeleteRubric}
+                    showAll={capturing}
                   />
                 </div>
               </>
