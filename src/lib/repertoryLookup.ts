@@ -1,11 +1,19 @@
 /**
- * Repertory Lookup - laadt remedie-data uit de OOREP Repertorium Publicum database.
+ * Repertory Lookup - laadt remedie-data uit de OOREP repertoria.
  * Data wordt per hoofdstuk geladen (lazy loading) en gecacht in geheugen.
  *
- * Bron: OOREP - Open Online Repertory (Repertorium Publicum)
- * Licentie: GPL v3
- * 74.667 rubrieken, 735.500 rubriek-middel koppelingen, 2.432 middelen
+ * Bron: OOREP - Open Online Repertory, licentie GPL v3
+ * - Repertorium Publicum: public/repertory/*.json
+ *   74.667 rubrieken, 735.500 rubriek-middel koppelingen, 2.432 middelen
+ * - Kents Repertorium (Duitse vertaling): public/repertory/kent-de/*.json
+ *   68.120 rubrieken, 619.730 rubriek-middel koppelingen
+ *   (gegenereerd met scripts/build-kent-de.mjs)
+ *
+ * Een chapterFile met submap ("kent-de/gemuet") wijst naar het Kent-repertorium;
+ * zonder submap ("mind") naar het Publicum.
  */
+
+import { RepertoryId, repertoryOfChapterFile } from './repertoryData';
 
 // Cache voor geladen hoofdstuk-data
 const chapterCache: Map<string, Record<string, string>> = new Map();
@@ -320,36 +328,37 @@ export function preloadChapter(sidebarChapterName: string): void {
 // Autocomplete zoekindex
 // ──────────────────────────────────────────
 
-let searchIndex: Record<string, string[]> | null = null;
-let searchIndexPromise: Promise<Record<string, string[]>> | null = null;
+// Zoekindex per repertorium: { chapterFile: [paden] }
+const searchIndexFiles: Record<RepertoryId, string> = {
+  'publicum': '/repertory/rubric-search-index.json',
+  'kent-de': '/repertory/kent-de/rubric-search-index.json',
+};
+const searchIndexes = new Map<RepertoryId, Promise<Record<string, string[]>>>();
 
-async function loadSearchIndex(): Promise<Record<string, string[]>> {
-  if (searchIndex) return searchIndex;
-  if (searchIndexPromise) return searchIndexPromise;
+function loadSearchIndex(repertory: RepertoryId): Promise<Record<string, string[]>> {
+  const cached = searchIndexes.get(repertory);
+  if (cached) return cached;
 
-  searchIndexPromise = fetch('/repertory/rubric-search-index.json')
+  const promise = fetch(searchIndexFiles[repertory])
     .then(res => {
       if (!res.ok) throw new Error(`Index laden mislukt: ${res.status}`);
-      return res.json();
-    })
-    .then((data: Record<string, string[]>) => {
-      searchIndex = data;
-      searchIndexPromise = null;
-      return data;
+      return res.json() as Promise<Record<string, string[]>>;
     })
     .catch(err => {
-      console.warn('Kon zoekindex niet laden:', err);
-      searchIndexPromise = null;
+      console.warn(`Kon zoekindex "${repertory}" niet laden:`, err);
+      searchIndexes.delete(repertory); // volgende keer opnieuw proberen
       return {} as Record<string, string[]>;
     });
 
-  return searchIndexPromise;
+  searchIndexes.set(repertory, promise);
+  return promise;
 }
 
 export interface RubricSearchResult {
   oorepPath: string;
   displayPath: string;
   chapterFile: string;
+  repertory: RepertoryId;
 }
 
 /**
@@ -391,16 +400,31 @@ const searchAliases: Record<string, string> = {
 };
 
 /**
- * Zoek rubrieken in de volledige OOREP database.
- * Ondersteunt queries als "anxiety", "Mind - Anx", "head pain", etc.
+ * Verwijder accenten en umlauts voor zoeken, zodat "gemut" ook "Gemüt" vindt.
+ * Alleen paden met niet-ASCII tekens worden omgezet (snel voor Engelse paden).
  */
-export async function searchRubrics(query: string, limit = 3): Promise<RubricSearchResult[]> {
+function foldDiacritics(text: string): string {
+  if (!/[^\x00-\x7f]/.test(text)) return text;
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss');
+}
+
+/**
+ * Zoek rubrieken in de OOREP repertoria.
+ * Ondersteunt queries als "anxiety", "Mind - Anx", "head pain", "Angst", etc.
+ * Zonder `repertories` wordt in alle repertoria gezocht.
+ */
+export async function searchRubrics(
+  query: string,
+  limit = 3,
+  repertories: RepertoryId[] = ['publicum', 'kent-de'],
+): Promise<RubricSearchResult[]> {
   if (query.trim().length < 2) return [];
 
-  const index = await loadSearchIndex();
+  const loaded = await Promise.all(repertories.map(loadSearchIndex));
+  const index: Record<string, string[]> = Object.assign({}, ...loaded);
 
-  // Normaliseer query: "Mind - Anxiety" → "mind anxiety"
-  let normalized = query.toLowerCase().replace(/ - /g, ' ').replace(/,/g, ' ').trim();
+  // Normaliseer query: "Mind - Anxiety" → "mind anxiety", "Übelkeit" → "ubelkeit"
+  let normalized = foldDiacritics(query.toLowerCase()).replace(/ - /g, ' ').replace(/,/g, ' ').trim();
 
   // Vervang sidebar-namen door OOREP-namen voor betere matching
   for (const [alias, oorepName] of Object.entries(searchAliases)) {
@@ -427,7 +451,7 @@ export async function searchRubrics(query: string, limit = 3): Promise<RubricSea
 
   for (const [chapterFile, paths] of entries) {
     for (const path of paths) {
-      const lowerPath = path.toLowerCase();
+      const lowerPath = foldDiacritics(path.toLowerCase());
       const flatPath = lowerPath.replace(/,\s*/g, ' ');
 
       // Alle zoekwoorden moeten voorkomen
@@ -470,6 +494,7 @@ export async function searchRubrics(query: string, limit = 3): Promise<RubricSea
         oorepPath: path,
         displayPath: oorepPathToDisplayPath(path),
         chapterFile,
+        repertory: repertoryOfChapterFile(chapterFile),
         score,
       });
     }

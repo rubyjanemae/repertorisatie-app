@@ -1,0 +1,187 @@
+{
+  "Allgemeines": {
+    "file": "allgemeines.json",
+    "rubricCount": 2070,
+    "sizeKB": 409.3
+  },
+  "Atmung": {
+    "file": "atmung.json",
+    "rubricCount": 740,
+    "sizeKB": 70.8
+  },
+  "Auge": {
+    "file": "auge.json",
+    "rubricCount": 1705,
+    "sizeKB": 176.2
+  },
+  "Auswurf": {
+    "file": "auswurf.json",
+    "rubricCount": 336,
+    "sizeKB": 39.8
+  },
+  "Bauch": {
+    "file": "bauch.json",
+    "rubricCount": 3482,
+    "sizeKB": 334.9
+  },
+  "Blase": {
+    "file": "blase.json",
+    "rubricCount": 745,
+    "sizeKB": 87.5
+  },
+  "Brust": {
+    "file": "brust.json",
+    "rubricCount": 3326,
+    "sizeKB": 309.6
+  },
+  "Extremitäten": {
+    "file": "extremitaeten.json",
+    "rubricCount": 15735,
+    "sizeKB": 1476
+  },
+  "Fieber": {
+    "file": "fieber.json",
+    "rubricCount": 579,
+    "sizeKB": 75
+  },
+  "Frost": {
+    "file": "frost.json",
+    "rubricCount": 751,
+    "sizeKB": 89.4
+  },
+  "Gehör": {
+    "file": "gehoer.json",
+    "rubricCount": 158,
+    "sizeKB": 14.7
+  },
+  "Gemüt": {
+    "file": "gemuet.json",
+    "rubricCount": 4489,
+    "sizeKB": 466.3
+  },
+  "Geschlechtsorgane männlich": {
+    "file": "geschlechtsorgane-maennlich.json",
+    "rubricCount": 1086,
+    "sizeKB": 132.8
+  },
+  "Geschlechtsorgane weiblich": {
+    "file": "geschlechtsorgane-weiblich.json",
+    "rubricCount": 1417,
+    "sizeKB": 183.8
+  },
+  "Gesicht": {
+    "file": "gesicht.json",
+    "rubricCount": 2008,
+    "sizeKB": 232
+  },
+  "Hals": {
+    "file": "hals.json",
+    "rubricCount": 987,
+    "sizeKB": 101.4
+  },
+  "Hals-Außenseite": {
+    "file": "hals-aussenseite.json",
+    "rubricCount": 250,
+    "sizeKB": 24.5
+  },
+  "Harnröhre": {
+    "file": "harnroehre.json",
+    "rubricCount": 569,
+    "sizeKB": 60
+  },
+  "Haut": {
+    "file": "haut.json",
+    "rubricCount": 1132,
+    "sizeKB": 163.9
+  },
+  "Husten": {
+    "file": "husten.json",
+    "rubricCount": 1489,
+    "sizeKB": 154.4
+  },
+  "Kehlkopf und Luftröhre": {
+    "file": "kehlkopf-und-luftroehre.json",
+    "rubricCount": 694,
+    "sizeKB": 93.8
+  },
+  "Kopf": {
+    "file": "kopf.json",
+    "rubricCount": 6780,
+    "sizeKB": 735.4
+  },
+  "Magen": {
+    "file": "magen.json",
+    "rubricCount": 3078,
+    "sizeKB": 314.1
+  },
+  "Mastdarm": {
+    "file": "mastdarm.json",
+    "rubricCount": 1285,
+    "sizeKB": 146.2
+  },
+  "Mund": {
+    "file": "mund.json",
+    "rubricCount": 1530,
+    "sizeKB": 168
+  },
+  "Nase": {
+    "file": "nase.json",
+    "rubricCount": 1435,
+    "sizeKB": 145.7
+  },
+  "Nieren": {
+    "file": "nieren.json",
+    "rubricCount": 253,
+    "sizeKB": 24.2
+  },
+  "Ohr": {
+    "file": "ohr.json",
+    "rubricCount": 1951,
+    "sizeKB": 161.9
+  },
+  "Prostata": {
+    "file": "prostata.json",
+    "rubricCount": 97,
+    "sizeKB": 8.9
+  },
+  "Rücken": {
+    "file": "ruecken.json",
+    "rubricCount": 3812,
+    "sizeKB": 383
+  },
+  "Schlaf": {
+    "file": "schlaf.json",
+    "rubricCount": 1021,
+    "sizeKB": 115.4
+  },
+  "Schweiß": {
+    "file": "schweiss.json",
+    "rubricCount": 388,
+    "sizeKB": 47.4
+  },
+  "Schwindel": {
+    "file": "schwindel.json",
+    "rubricCount": 481,
+    "sizeKB": 60.4
+  },
+  "Sehen": {
+    "file": "sehen.json",
+    "rubricCount": 842,
+    "sizeKB": 68.6
+  },
+  "Stuhl": {
+    "file": "stuhl.json",
+    "rubricCount": 220,
+    "sizeKB": 40.7
+  },
+  "Urin": {
+    "file": "urin.json",
+    "rubricCount": 390,
+    "sizeKB": 54.2
+  },
+  "Zähne": {
+    "file": "zaehne.json",
+    "rubricCount": 809,
+    "sizeKB": 84.4
+  }
+}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef, Dispatch, SetStateAction } from 'react';
-import { repertoryChapters, RepertoryChapter } from '@/lib/repertoryData';
+import { chaptersByRepertory, repertories, RepertoryChapter, RepertoryId } from '@/lib/repertoryData';
 import {
   getDirectChildren,
   lookupRemediesDirect,
@@ -31,6 +31,9 @@ export default function RepertorySidebar({
   setExpandedPaths,
 }: RepertorySidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [repertory, setRepertory] = useState<RepertoryId>('publicum');
+  const chapters = chaptersByRepertory[repertory];
+  const repertoryInfo = repertories.find(r => r.id === repertory)!;
   const [childrenByPath, setChildrenByPath] = useState<Map<string, ChildrenState>>(new Map());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<RubricSearchResult[]>([]);
@@ -109,7 +112,7 @@ export default function RepertorySidebar({
     let cancelled = false;
     setSearchLoading(true);
     const t = setTimeout(async () => {
-      const res = await searchRubrics(searchQuery, 50);
+      const res = await searchRubrics(searchQuery, 50, [repertory]);
       if (cancelled) return;
       setSearchResults(res);
       setSearchLoading(false);
@@ -122,7 +125,7 @@ export default function RepertorySidebar({
       if (!cancelled) setSearchCounts(counts);
     }, 150);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [searchQuery, isInSearchMode]);
+  }, [searchQuery, isInSearchMode, repertory]);
 
   const handleAdd = useCallback(async (oorepPath: string, chapterFile: string, displayPath: string) => {
     if (existingRubricPaths.has(displayPath)) return;
@@ -160,7 +163,7 @@ export default function RepertorySidebar({
             </svg>
             <div>
               <h2 className="font-display font-semibold text-sm text-cream">Repertorium</h2>
-              <p className="text-cream/30 text-[10px] font-body">{repertoryChapters.length} hoofdstukken · OOREP</p>
+              <p className="text-cream/30 text-[10px] font-body">{chapters.length} hoofdstukken · OOREP · {repertoryInfo.description}</p>
             </div>
           </div>
           <button
@@ -173,13 +176,33 @@ export default function RepertorySidebar({
         </div>
         <div className="decorative-rule-dark" />
 
-        {/* Zoekbalk */}
-        <div className="px-3 py-2.5 border-b border-warm-border-subtle bg-parchment/50 shrink-0">
+        {/* Keuze repertorium + zoekbalk */}
+        <div className="px-3 py-2.5 border-b border-warm-border-subtle bg-parchment/50 shrink-0 space-y-2">
+          <div className="flex gap-1 p-0.5 bg-warm-border-subtle/60 rounded-lg" role="tablist" aria-label="Repertorium">
+            {repertories.map(r => (
+              <button
+                key={r.id}
+                role="tab"
+                aria-selected={repertory === r.id}
+                onClick={() => setRepertory(r.id)}
+                title={r.description}
+                className={`flex-1 text-xs font-body font-medium py-1.5 rounded-md transition-colors ${
+                  repertory === r.id
+                    ? 'bg-warm-white text-forest shadow-sm'
+                    : 'text-warm-text-muted hover:text-warm-text'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Zoek in volledige OOREP (min. 2 tekens)..."
+            placeholder={repertory === 'kent-de'
+              ? 'Zoek in Kent, Duitse termen (bijv. Angst, Kopf Schmerz)...'
+              : 'Zoek in het Publicum, Engelse termen (min. 2 tekens)...'}
             className="input-materia w-full"
             autoFocus={isOpen}
           />
@@ -196,7 +219,7 @@ export default function RepertorySidebar({
               onAdd={handleAdd}
             />
           ) : (
-            repertoryChapters.map(chapter => {
+            chapters.map(chapter => {
               const expanded = expandedPaths.has(chapter.rootPath);
               const state = childrenByPath.get(chapter.rootPath);
               return (

@@ -34,3 +34,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Bronnen en licenties
+
+De repertoriumdata komt uit [OOREP](https://github.com/nondeterministic/oorep) en valt onder GPL v3:
+
+- **Repertorium Publicum** door Vladimir Polony, in `public/repertory/`.
+- **Kents Repertorium, Duitse vertaling** door Bildungswerk für therapeutische Berufe / Joscha Körschgen, in `public/repertory/kent-de/`.
+
+De Kent-bestanden opnieuw opbouwen uit de OOREP-dump:
+
+```bash
+curl -L -o oorep.sql.gz https://github.com/nondeterministic/oorep/raw/master/oorep.sql.gz
+node scripts/build-kent-de.mjs oorep.sql.gz
+```

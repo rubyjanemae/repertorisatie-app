@@ -52,3 +52,73 @@ export const repertoryChapters: RepertoryChapter[] = [
   { name: 'Skin',                 nameDutch: 'Huid',                       icon: '🖐️', chapterFile: 'skin',                rootPath: 'Skin' },
   { name: 'Generals',             nameDutch: 'Algemeenheden',              icon: '⚡', chapterFile: 'generalities',        rootPath: 'Generalities' },
 ];
+
+// ──────────────────────────────────────────
+// Beschikbare repertoria
+// ──────────────────────────────────────────
+
+export type RepertoryId = 'publicum' | 'kent-de';
+
+export interface RepertoryInfo {
+  id: RepertoryId;
+  label: string;        // Korte naam voor knoppen en badges
+  description: string;  // Uitleg bij de keuze
+}
+
+export const repertories: RepertoryInfo[] = [
+  { id: 'publicum', label: 'Publicum', description: 'Repertorium Publicum (Engels)' },
+  { id: 'kent-de',  label: 'Kent',     description: 'Kents Repertorium (Duitse vertaling)' },
+];
+
+/** Kent-hoofdstukbestanden staan in een submap: chapterFile "kent-de/gemuet" */
+export function repertoryOfChapterFile(chapterFile: string): RepertoryId {
+  return chapterFile.startsWith('kent-de/') ? 'kent-de' : 'publicum';
+}
+
+// Kent (Duitse vertaling, OOREP, GPL v3). Zelfde volgorde, iconen en Nederlandse
+// namen als het Publicum; `name` is het Duitse hoofdstuk zoals Kent het noemt.
+export const kentChapters: RepertoryChapter[] = [
+  { name: 'Gemüt',                      nameDutch: 'Gemoed',                     icon: '🧠', chapterFile: 'kent-de/gemuet',                     rootPath: 'Gemüt' },
+  { name: 'Schwindel',                  nameDutch: 'Duizeligheid',               icon: '💫', chapterFile: 'kent-de/schwindel',                  rootPath: 'Schwindel' },
+  { name: 'Kopf',                       nameDutch: 'Hoofd',                      icon: '🗣️', chapterFile: 'kent-de/kopf',                       rootPath: 'Kopf' },
+  { name: 'Auge',                       nameDutch: 'Oog',                        icon: '👁️', chapterFile: 'kent-de/auge',                       rootPath: 'Auge' },
+  { name: 'Sehen',                      nameDutch: 'Gezichtsvermogen',           icon: '🔍', chapterFile: 'kent-de/sehen',                      rootPath: 'Sehen' },
+  { name: 'Ohr',                        nameDutch: 'Oor',                        icon: '👂', chapterFile: 'kent-de/ohr',                        rootPath: 'Ohr' },
+  { name: 'Gehör',                      nameDutch: 'Gehoor',                     icon: '🔊', chapterFile: 'kent-de/gehoer',                     rootPath: 'Gehör' },
+  { name: 'Nase',                       nameDutch: 'Neus',                       icon: '👃', chapterFile: 'kent-de/nase',                       rootPath: 'Nase' },
+  { name: 'Gesicht',                    nameDutch: 'Gezicht',                    icon: '😶', chapterFile: 'kent-de/gesicht',                    rootPath: 'Gesicht' },
+  { name: 'Mund',                       nameDutch: 'Mond',                       icon: '👄', chapterFile: 'kent-de/mund',                       rootPath: 'Mund' },
+  { name: 'Zähne',                      nameDutch: 'Tanden',                     icon: '🦷', chapterFile: 'kent-de/zaehne',                     rootPath: 'Zähne' },
+  { name: 'Hals',                       nameDutch: 'Keel',                       icon: '🫁', chapterFile: 'kent-de/hals',                       rootPath: 'Hals' },
+  { name: 'Hals-Außenseite',            nameDutch: 'Uitwendige keel',            icon: '🔗', chapterFile: 'kent-de/hals-aussenseite',           rootPath: 'Hals-Außenseite' },
+  { name: 'Magen',                      nameDutch: 'Maag',                       icon: '🫃', chapterFile: 'kent-de/magen',                      rootPath: 'Magen' },
+  { name: 'Bauch',                      nameDutch: 'Buik',                       icon: '🔘', chapterFile: 'kent-de/bauch',                      rootPath: 'Bauch' },
+  { name: 'Mastdarm',                   nameDutch: 'Rectum',                     icon: '🔻', chapterFile: 'kent-de/mastdarm',                   rootPath: 'Mastdarm' },
+  { name: 'Stuhl',                      nameDutch: 'Ontlasting',                 icon: '💩', chapterFile: 'kent-de/stuhl',                      rootPath: 'Stuhl' },
+  { name: 'Blase',                      nameDutch: 'Blaas',                      icon: '🫧', chapterFile: 'kent-de/blase',                      rootPath: 'Blase' },
+  { name: 'Nieren',                     nameDutch: 'Nieren',                     icon: '🫘', chapterFile: 'kent-de/nieren',                     rootPath: 'Nieren' },
+  { name: 'Prostata',                   nameDutch: 'Prostaat',                   icon: '⚕️', chapterFile: 'kent-de/prostata',                   rootPath: 'Prostata' },
+  { name: 'Harnröhre',                  nameDutch: 'Urethra',                    icon: '🔸', chapterFile: 'kent-de/harnroehre',                 rootPath: 'Harnröhre' },
+  { name: 'Urin',                       nameDutch: 'Urine',                      icon: '🧪', chapterFile: 'kent-de/urin',                       rootPath: 'Urin' },
+  { name: 'Geschlechtsorgane männlich', nameDutch: 'Mannelijke geslachtsdelen',  icon: '♂️', chapterFile: 'kent-de/geschlechtsorgane-maennlich', rootPath: 'Geschlechtsorgane männlich' },
+  { name: 'Geschlechtsorgane weiblich', nameDutch: 'Vrouwelijke geslachtsdelen', icon: '♀️', chapterFile: 'kent-de/geschlechtsorgane-weiblich', rootPath: 'Geschlechtsorgane weiblich' },
+  { name: 'Kehlkopf und Luftröhre',     nameDutch: 'Strottenhoofd & luchtpijp',  icon: '🎤', chapterFile: 'kent-de/kehlkopf-und-luftroehre',    rootPath: 'Kehlkopf und Luftröhre' },
+  { name: 'Atmung',                     nameDutch: 'Ademhaling',                 icon: '🌬️', chapterFile: 'kent-de/atmung',                     rootPath: 'Atmung' },
+  { name: 'Husten',                     nameDutch: 'Hoest',                      icon: '🤧', chapterFile: 'kent-de/husten',                     rootPath: 'Husten' },
+  { name: 'Auswurf',                    nameDutch: 'Ophoesten',                  icon: '💧', chapterFile: 'kent-de/auswurf',                    rootPath: 'Auswurf' },
+  { name: 'Brust',                      nameDutch: 'Borst',                      icon: '🫀', chapterFile: 'kent-de/brust',                      rootPath: 'Brust' },
+  { name: 'Rücken',                     nameDutch: 'Rug',                        icon: '🦴', chapterFile: 'kent-de/ruecken',                    rootPath: 'Rücken' },
+  { name: 'Extremitäten',               nameDutch: 'Ledematen',                  icon: '🦵', chapterFile: 'kent-de/extremitaeten',              rootPath: 'Extremitäten' },
+  { name: 'Schlaf',                     nameDutch: 'Slaap',                      icon: '😴', chapterFile: 'kent-de/schlaf',                     rootPath: 'Schlaf' },
+  { name: 'Träume',                     nameDutch: 'Dromen',                     icon: '🌙', chapterFile: 'kent-de/schlaf',                     rootPath: 'Schlaf, Träume' },
+  { name: 'Frost',                      nameDutch: 'Koude rillingen',            icon: '🥶', chapterFile: 'kent-de/frost',                      rootPath: 'Frost' },
+  { name: 'Fieber',                     nameDutch: 'Koorts',                     icon: '🤒', chapterFile: 'kent-de/fieber',                     rootPath: 'Fieber' },
+  { name: 'Schweiß',                    nameDutch: 'Zweten',                     icon: '💦', chapterFile: 'kent-de/schweiss',                   rootPath: 'Schweiß' },
+  { name: 'Haut',                       nameDutch: 'Huid',                       icon: '🖐️', chapterFile: 'kent-de/haut',                       rootPath: 'Haut' },
+  { name: 'Allgemeines',                nameDutch: 'Algemeenheden',              icon: '⚡', chapterFile: 'kent-de/allgemeines',                rootPath: 'Allgemeines' },
+];
+
+export const chaptersByRepertory: Record<RepertoryId, RepertoryChapter[]> = {
+  'publicum': repertoryChapters,
+  'kent-de': kentChapters,
+};

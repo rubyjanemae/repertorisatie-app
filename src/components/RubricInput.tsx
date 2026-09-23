@@ -89,7 +89,12 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
   const [shareStatus, setShareStatus] = useState<'idle' | 'sharing' | 'shared' | 'error'>('idle');
 
   // Autocomplete suggesties (OOREP + Community)
-  type SuggestionItem = RubricSearchResult & { source?: 'oorep' | 'community'; communityRemedyString?: string };
+  // Community- en bibliotheekitems hebben geen repertorium; OOREP-items wel
+  type SuggestionItem = Omit<RubricSearchResult, 'repertory'> & {
+    repertory?: RubricSearchResult['repertory'];
+    source?: 'oorep' | 'community';
+    communityRemedyString?: string;
+  };
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(false);
@@ -456,7 +461,7 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
               <div id="rubriek-suggesties" className="absolute z-20 w-full mt-1 card-materia overflow-hidden animate-fade-in" role="listbox">
                 <div className="px-3 py-1.5 bg-forest-light/50 border-b border-forest/10 flex items-center justify-between">
                   <span className="text-[10px] text-forest font-body font-semibold uppercase tracking-wider">
-                    Repertorium{communityItems.length > 0 ? ' + Community' : ' Publicum'}
+                    Repertorium{communityItems.length > 0 ? ' + Community' : ''}
                   </span>
                   <span className="text-[10px] text-warm-text-muted font-body">
                     {suggestions.length} resultaten
@@ -494,6 +499,14 @@ export default function RubricInput({ onAdd, savedRubrics, prefillRubricName, pr
                             <span className={`font-semibold ${isHighlighted ? 'text-forest-dark' : 'text-forest'}`}>{chapter}</span>
                             <span className="text-warm-text-secondary">{rest}</span>
                           </span>
+                          {s.repertory === 'kent-de' && (
+                            <span
+                              className="ml-auto text-[9px] font-body font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-gold-light text-sienna border border-gold/30 shrink-0"
+                              title="Kents Repertorium (Duitse vertaling)"
+                            >
+                              Kent
+                            </span>
+                          )}
                           <span className={`ml-auto text-[10px] text-forest shrink-0 font-body transition-opacity ${
                             isHighlighted ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                           }`}>
